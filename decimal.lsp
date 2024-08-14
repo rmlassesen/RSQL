@@ -68,4 +68,4 @@
 		(when (= signexp 1) (setf exponent (- 0 exponent)))
 		(setf value (* value (expt 10 exponent)))
 		(when (= sign 1) (setf value (- 0 value)))
-		value))
+		  value))

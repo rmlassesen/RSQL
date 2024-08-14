@@ -12,7 +12,6 @@
 ; 10	Password hashed with scrypt
 ; 11	Password hashed with argon2i
 
-(load "read.lsp")
 ; Data-stream  is opened as an 8-bit stream
 ; Following function definitions are for writing 8-bit, 16-bit and 32-bit values to the stream
 ; Subsequently a function to write a sequence of chars as 8- and 16-bit to the stream  
@@ -240,4 +239,3 @@
 		
 		(loop for stream across idx-streams do (when stream (close stream))) ; Close each index-file-stream
 ))
-	
