@@ -21,4 +21,3 @@
 (load "strings.lsp")
 (load "password.lsp")
 (load "read.lsp")
-(load "write.lsp")

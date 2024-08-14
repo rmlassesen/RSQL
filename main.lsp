@@ -18,6 +18,3 @@
 			("Robot" 1989 "En fin robot"))
 
 )
-
-
-(main)

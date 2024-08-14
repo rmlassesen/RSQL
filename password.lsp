@@ -29,5 +29,4 @@
 
 (defun hash-scrypt-password (password salt)
 	"Salt a password, and hash it using scrypt"
-	(ironclad::derive-key *scrypt* (make-8bit-char-array password) salt 32 24))
-	
+	(ironclad::derive-key *scrypt* (make-8bit-char-array password) salt 32 24))	
