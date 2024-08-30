@@ -19,6 +19,16 @@
 (defun read-8bit-value (stream)
 	(read-byte stream))
 
+(defun read-bytes-to-bit-array (stream bytes)
+	"Reads BYTES number of bytes from STREAM and returns a bit-array of size 8*BYTES"
+	(let (	(read-byte)
+			(bit-array (* 8 bytes) :element-type 'bit))
+		(dotimes (l bytes)
+			(setf read-byte (read-byte stream))
+			(dotimes (i 8)
+				(setf (aref bit-array (+ i (* 8 l)) (ldb (byte 1 (- 7 i)) bytes)))))
+		bytes))
+
 (defun read-16bit-value (stream)
 	(let ((low-byte (read-byte stream))
 			(high-byte (read-byte stream)))
@@ -94,6 +104,19 @@
 		(to-string charseq)))
 
 ; Floating-point numbers
+(defun read-32-bit-decimal (stream)
+	"Read a four byte-section known to be a 32-bit decimal representation"
+	(32-bit-to-decimal (read-bytes-to-bit-array stream 4)))
+	
+(defun read-64-bit-decimal (stream)
+	"Read a four byte-section known to be a 64-bit decimal representation"
+	(64-bit-to-decimal (read-bytes-to-bit-array stream 8)))
+
+(defun read-32-bit-float (stream)
+	32-bit-to-float (read-bytes-to-bit-array stream 4))
+	
+(defun read-64-bit-float (stream)
+	64-bit-to-float (read-bytes-to-bit-array stream 8))
 
 ; Passwords - salted, please
 			
@@ -161,4 +184,4 @@
 	(with-open-file (stream (concatenate 'string "Lists/" idx "_" tbl_name ".tbl")
 						  :direction :input
 						  :element-type '(unsigned-byte 8))
-					(read-64bit-value stream)))
+		(read-64bit-value stream)))

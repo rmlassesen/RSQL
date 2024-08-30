@@ -16,8 +16,10 @@
 
 (ql:quickload "ironclad") ; Ironclad library for encryption and security
 
+(load "helper-functions.lsp")
 (load "floats.lsp")
 (load "decimal.lsp")
 (load "strings.lsp")
 (load "password.lsp")
 (load "read.lsp")
+(load "json.lsp")

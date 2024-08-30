@@ -205,9 +205,7 @@
 		(10 (write-scrypt-password stream data)) 	; Password hashed with scrypt
 		(11 (write-argon2-password stream data)) 	; Password hashed with argon2 (slowest)
 	)
-	(file-position stream)
-
-)
+	(file-position stream))
 
 (defun write-row (tbl_name num-rows data)
 	"Write a row/line to the database file of table(tbl_name)"
@@ -237,5 +235,4 @@
 	
 		
 		
-		(loop for stream across idx-streams do (when stream (close stream))) ; Close each index-file-stream
-))
+		(loop for stream across idx-streams do (when stream (close stream))))) ; Close each index-file-stream
