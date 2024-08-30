@@ -1,0 +1,67 @@
+{
+    "data": {
+        "schema": {
+            "columns": {
+                "ID": "STRING",
+                "Date": "DATETIME",
+                "DueDate": "DATETIME",
+                "InvNumber": "STRING",
+                "Gender": "STRING",
+                "FirstName": "STRING",
+                "LastName": "STRING",
+                "TotalOrdered": "INTEGER",
+                "InvSubTotal": "CURRENCY",
+                "InvTaxTotal": "CURRENCY",
+                "InvTotal": "CURRENCY"
+            },
+            "tables": {
+                "detail": {
+                    "columns": {
+                        "ItemNumber": "STRING",
+                        "ItemDesc": "STRING",
+                        "ItemUnitPrice": "CURRENCY",
+                        "ItemOrdered": "INTEGER",
+                        "ItemTotal": "CURRENCY"
+                    }
+                }
+            }
+       },
+        "fields": {
+            "ID": "CU00048376",
+            "Date": 1332594000000,
+            "DueDate": 1335189600000,
+            "InvNumber": "INV9441991",
+            "Gender": "M.",
+            "FirstName": "Benjamin",
+            "LastName": "Verret",
+            "TotalOrdered": 3,
+            "InvSubTotal": "1485.00",
+            "InvTaxTotal": "111.38",
+            "InvTotal": "1596.38"
+        },
+        "tables": {
+            "detail": [
+                {
+                    "id": 0,
+                    "fields": {
+                        "ItemNumber": "PSM002",
+                        "ItemDesc": "PSM Production (unlimited)",
+                        "ItemUnitPrice": "495.00",
+                        "ItemOrdered": 2,
+                        "ItemTotal": "990.00"
+                    }
+                },
+                {
+                    "id": 0,
+                    "fields": {
+                        "ItemNumber": "PSM005",
+                        "ItemDesc": "Upgrade (Starter to Web)",
+                        "ItemUnitPrice": "495.00",
+                        "ItemOrdered": 1,
+                        "ItemTotal": "495.00"
+                    }
+                }
+            ]
+        }
+    }
+}

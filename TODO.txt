@@ -1,0 +1,7 @@
+TODO
+
+TimeDate format : Seconds since 1/1 1970 00:00
+JLI-file format (JSON like) : (Total bytes for Entry) Per key-value: (bytes for key)(key)(bytes for value)(value)
+CSV to JLI
+XML to JLI
+EXCEL to JLI ? Just Modern XML?? 
