@@ -8,33 +8,14 @@
 
 ; JLI takes form as a simple array of hash-tables, representing each {},[] encapsulation with an array of hash-tables
 
-(declaim (ftype (function (string) string) import-as-string))
 (declaim (ftype (function (stream) string) read-json-key))
 (declaim (ftype (function (stream)) read-json-value))
 (declaim (ftype (function (stream) hash-table) json-record-to-hash))
 (declaim (ftype (function (string) array) make-jli-from-json))
 (declaim (ftype (function (stream) array) make-jli-from-json-stream))
 (declaim (ftype (function (string) array) jli-from-json-file))
-(declaim (ftype (function (array keyword symbol string &optional list) array) find-in-jli))
 (declaim (ftype (function (hash-table) string) json-string-from-jli-record))
 (declaim (ftype (function (array) string) json-string-from-jli))
-
-
-(defun import-as-string (json-file-path)
-	"Opens a file and imports its contents as one string"
-	(with-open-file (stream json-file-path
-                        :direction :input
-                        :element-type 'character)
-		(let* ((buffer (make-array (file-length stream) :element-type 'character))
-			(len (read-sequence buffer stream)))
-		(subseq buffer 0 len))))
-		
-
-(defun pass-whitespaces (stream)
-	(loop for c = (peek-char nil stream) do
-		(if (typep c 'rwhitespaces)
-			(read-char stream nil nil)
-			(return))))
 			
 (defun read-json-key (stream)
 	"Read substring from STREAM as key from current position until :, removing quotes"
@@ -102,32 +83,10 @@
 		
 (defun jli-from-json-file (json-file-path)
 	"Create a JLI-hash-table from .json-filetype"
-	(make-jli-from-json (import-as-string json-file-path)))
-
-
-; Return-list encapsules a list of :keywords as KEYS, of which entries from the records to return
-; No return-list returns all/*
-
-(defun find-in-jli (jli key operator val &optional return-list)
-	"Return a JLI, containing all records that matches conditions"
-	(let ((jli-table (make-array 0 	:element-type 'array
-									:fill-pointer 0
-									:adjustable t))
-			(temp-hash (make-hash-table)))
-		; If RETURN-LIST is parsed, return selected key/value pairs	
-		(when return-list
-			(loop for record across jli do
-				(when (compare-string-values operator (gethash key record) val)
-					(dolist (k return-list)
-						(setf (gethash k temp-hash) (gethash k record)))
-					(vector-push-extend (copy-hash-table temp-hash) jli-table)
-					(clrhash temp-hash)))
-			(return-from find-in-jli jli-table))
-		; If no RETURN-LIST is parsed, return all key/value pairs							
-		(loop for record across jli do
-			(when (compare-string-values operator (gethash key record) val)
-				(vector-push-extend record jli-table)))
-		jli-table))
+	(let* (	(stream (open-file-without-bom json-file-path))
+			(ret (make-jli-from-json-stream stream)))
+		(close stream)
+		ret))
 						
 		
 (defun json-string-from-jli-record (jli-record)
