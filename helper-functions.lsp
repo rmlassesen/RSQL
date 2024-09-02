@@ -2,9 +2,11 @@
 
 (deftype rwhitespaces () '(member #\Space #\Tab #\Newline #\Return))
 
+(declaim (ftype (function (string) stream) open-file-without-bom))
+(declaim (ftype (function (string) string) import-as-string))
+(declaim (ftype (function (stream)) pass-whitespaces))
 (declaim (ftype (function (string) boolean) string-is-number))
 (declaim (ftype (function (symbol string string) boolean) compare-string-values))
-(declaim (ftype (function (array) array) copy-jli))
 (declaim (ftype (function (hash-table) hash-table) copy-hash-table))
 
 ; IMPORTANT function returns a STREAM and MUST BE CLOSED after use : (CLOSE STREAM)
@@ -33,6 +35,23 @@
       (t 									(file-position stream 0)))	; No BOM
     stream))
 
+(defun import-as-string (file-path)
+	"Opens a file and imports its contents as one string"
+	(with-open-file (stream file-path
+                        :direction :input
+                        :element-type 'character)
+		(let* ((buffer (make-array (file-length stream) :element-type 'character))
+			(len (read-sequence buffer stream)))
+		(subseq buffer 0 len))))
+		
+
+(defun pass-whitespaces (stream)
+	"Skip STREAM across members of rwhitespaces and return nothing"
+	(loop for c = (peek-char nil stream) do
+		(if (typep c 'rwhitespaces)
+			(read-char stream nil nil)
+			(return))))
+
 (defun string-is-number (str)
 	"Determines whether a string is entirely a number"
 	(numberp (read-from-string str)))
@@ -41,28 +60,16 @@
 	"Convert a simple operator to test on a string"
 	(cond
 		((and (string-is-number x) (string-is-number y)) ; If the strings are actually numbers, compare them as such
-			(funcall operator (read-from-string x) (read-from-string y)))
+			(cond
+				((eq operator '!=) 	(not (= (read-from-string x) (read-from-string y))))
+				(t (funcall operator (read-from-string x) (read-from-string y)))))
 		((eq operator '=)	(string= x y))
-		((eq operator '>	(string> x y))
+		((eq operator '>)	(string> x y))
 		((eq operator '<)	(string< x y))
 		((eq operator '<=)	(string<= x y))
 		((eq operator '>=)	(string>= x y))
 		((eq operator '!=)	(not (string= x y)))
 		(t nil)))
-
-(defun copy-jli (jli)
-	"Return an exact copy of a JLI"
-	(let (	(new-jli (make-array (length jli) :element-type 't))
-			(i -1))
-			
-		(loop for record across jli do
-			(incf i)
-			(setf (aref new-jli i)
-				(cond
-					((hash-table-p record) 			(copy-hash-table record))	; If the record is actually a record, copy it
-					((hash-table-p (aref record 0))	(copy-jli record)) 			; Recursively copy a JLI object (array of hash-tables)
-					(t 								record)))) 					; Otherwise, copy the value directly
-		new-jli))
 
 		
 (defun copy-hash-table (hash-tbl)

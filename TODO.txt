@@ -2,6 +2,9 @@ TODO
 
 TimeDate format : Seconds since 1/1 1970 00:00
 JLI-file format (JSON like) : (Total bytes for Entry) Per key-value: (bytes for key)(key)(bytes for value)(value)
-CSV to JLI
-XML to JLI
-EXCEL to JLI ? Just Modern XML?? 
+CSV to JLI :Initiated :90%
+XML to JLI :Initiated :80% 
+EXCEL to JLI ? Just Modern XML??
+(XML) GPX 
+JLI search algorithms (string form vs code-form)
+JLI Nested search

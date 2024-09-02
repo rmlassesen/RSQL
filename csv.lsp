@@ -42,6 +42,7 @@
 		ret))
 		
 (defun find-csv-record (csv-array identifier)
+	"Find a record from a non-JLI CSV-object - array of lists"
 	(princ identifier)
 	csv-array)
 
