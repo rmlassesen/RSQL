@@ -6,5 +6,5 @@ CSV to JLI :Initiated :90%
 XML to JLI :Initiated :80% 
 EXCEL to JLI ? Just Modern XML??
 (XML) GPX 
-JLI search algorithms (string form vs code-form)
+JLI search algorithms (string form vs code-form) 40%
 JLI Nested search

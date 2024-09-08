@@ -2,27 +2,11 @@
 ; JavaScript Object Notation Lisp Interpretation
 
 ; JLI takes form as a simple array of hash-tables, representing each {},[] encapsulation with an array of hash-tables
-
-(declaim (ftype (function (array) array) copy-jli))
 (declaim (ftype (function (array keyword symbol string &optional list) array) find-in-jli))
-
-(defun copy-jli (jli)
-	"Return an exact copy of a JLI"
-	(let (	(new-jli (make-array (length jli) :element-type 't))
-			(i -1))
-			
-		(loop for record across jli do
-			(incf i)
-			(setf (aref new-jli i)
-				(cond
-					((hash-table-p record) 			(copy-hash-table record))	; If the record is actually a record, copy it
-					((hash-table-p (aref record 0))	(copy-jli record)) 			; Recursively copy a JLI object (array of hash-tables)
-					(t 								record)))) 					; Otherwise, copy the value directly
-		new-jli))
 		
 
 ; Return-list encapsules a list of :keywords as KEYS, of which entries from the records to return
-; No return-list returns all/*
+; No return-list returns all/* (temp function for DEV)
 
 (defun find-in-jli (jli key operator val &optional return-list)
 	"Return a JLI, containing all records that matches conditions"
@@ -50,3 +34,6 @@
 	(if record-number
 		(gethash key (aref jli record-number))
 		(gethash key (aref jli 0))))
+		
+
+

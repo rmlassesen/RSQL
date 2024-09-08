@@ -105,6 +105,6 @@
 (defun import-xml-from-file (xml-file-path)
 	"Open XML-file and return it as a JLI-object"
 	(let* (	(stream (open-file-without-bom xml-file-path))
-			(ret (xml-to-jli stream)))
+			(jli (xml-to-jli stream)))
 		(close stream)
-		ret))
+		jli))
