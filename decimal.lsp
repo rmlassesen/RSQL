@@ -8,10 +8,6 @@
 (defun split-decimal-string (str)
 	(let* (( valuestr (write-to-string str)) (pos (position #\. valuestr)))
 		(list (subseq valuestr 0 pos) (subseq valuestr (+ pos 1)))))
-
-(defun first-non-zero-in-string (str)
-  "Find the first position of a character in string that is not #\0"
-  (position-if (lambda (c) (not (eql c #\0))) str))
 		
 (defun decimal-to-32-bit (value)
 	"Convert a float into a 32-bit representation (single precision)"
