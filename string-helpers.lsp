@@ -56,6 +56,10 @@
 			if (alphanumericp char)
 				return i))
 
+(defun first-non-zero-in-string (str)
+  "Find the first position of a character in string that is not #\0"
+  (position-if (lambda (c) (not (eql c #\0))) str))
+
 (defun or-find (orlist str &optional (start 0))
 	"Returns a CONS (position delimiter) of the first occurence
 	of any delimiter in STR"
