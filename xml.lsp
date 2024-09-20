@@ -8,14 +8,6 @@
 ; JLI takes form as a simple array of hash-tables, representing each JSON {},[] encapsulation with an array of hash-tables
 ; In XML {} and [] are equivalent to <record> and <dataset>
 
-(declaim (ftype (function (stream) keyword) read-tag-name))
-(declaim (ftype (function (stream) string) read-xml-content))
-(declaim (ftype (function (stream) string) get-xml-prolog))
-(declaim (ftype (function (stream)) skip-xml-comment))
-(declaim (ftype (function (stream) hash-table) read-xml-record))
-(declaim (ftype (function (stream) array) xml-to-jli))
-(declaim (ftype (function (string) array) import-xml-from-file))
-
 (defun read-tag-name (stream)
 	"Extract name of tag as :KEYWORD"
 	(read-char stream)												; Remove < from stream

@@ -5,15 +5,6 @@
 ; And All above 63535 in 4 bytes				(1. byte prefixed with 11110: 11110xxx)	Remaining length 21-bit
 ; 												Byte 2, 3 and 4 are prefixed with 10: 10xxxxxx
 
-(declaim (ftype (function () array) unknown-char))
-(declaim (ftype (function (integer) array) 1-byte-utf-8))
-(declaim (ftype (function (integer) array) 2-byte-utf-8))
-(declaim (ftype (function (integer) array) 3-byte-utf-8))
-(declaim (ftype (function (integer) array) 4-byte-utf-8))
-(declaim (ftype (function (integer) t) encode-utf-8))
-(declaim (ftype (function (stream) integer) decode-utf-8-from-stream))
-
-(declaim (inline decode-utf-8-from-stream))
 
 (defun unknown-char ()
 	"Creates the #/? char in UTF-8"
