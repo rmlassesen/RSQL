@@ -5,6 +5,16 @@
 ; And All above 63535 in 4 bytes				(1. byte prefixed with 11110: 11110xxx)	Remaining length 21-bit
 ; 												Byte 2, 3 and 4 are prefixed with 10: 10xxxxxx
 
+(declaim (ftype (function () array) unknown-char))
+(declaim (ftype (function (integer) array) 1-byte-utf-8))
+(declaim (ftype (function (integer) array) 2-byte-utf-8))
+(declaim (ftype (function (integer) array) 3-byte-utf-8))
+(declaim (ftype (function (integer) array) 4-byte-utf-8))
+(declaim (ftype (function (integer) t) encode-utf-8))
+(declaim (ftype (function (stream) integer) decode-utf-8-from-stream))
+
+(declaim (inline decode-utf-8-from-stream))
+
 (defun unknown-char ()
 	"Creates the #/? char in UTF-8"
 	(make-array 1 :element-type '(simple-bit-vector 8) :initial-element 
@@ -13,11 +23,8 @@
 (defun 1-byte-utf-8 (charcode)
 	"Encode charcode values 0-127"
 	(let* (	(byte1 (make-array 8 :element-type 'bit :initial-element 0))
-			(bit-array (int-to-bit charcode))
-			(i 1))
-		(loop for b across bit-array do
-			(setf (aref byte1 i) b)
-			(incf i))
+			(bit-array (int-to-bit charcode)))
+		(setf (subseq byte1 (- 8 (length bit-array))) (subseq bit-array 0))
 		(make-array 1 :element-type '(simple-bit-vector 8) :initial-element byte1)))
 		
 (defun 2-byte-utf-8 (charcode)
@@ -74,7 +81,7 @@
 (defun encode-utf-8 (char)
 	"Encode character to UTF-8"
 	(unless (or (characterp char)(integerp char))
-		(format nil "~A is an un-recognized character value" char) ; TODO error-handling
+		(format t "~A is an un-recognized character value" char) ; TODO error-handling
 		(return-from encode-utf-8 (unknown-char)))
 	(let (	(charcode (if (numberp char)char (char-code char)))) ; Return byte-array based on the size of the charcode
 		(cond 	((or (< charcode 0) (> charcode 1114111)) (unknown-char)) ; Return unknown-char if charcode is out of range
@@ -83,16 +90,16 @@
 				((and (> charcode 2047)(> 65536 charcode))(3-byte-utf-8 charcode))
 				((and (> charcode 65535)(> 1114111 charcode))(4-byte-utf-8 charcode)))))
 				
-(defun decode-utf-8-from-stream (stream)
+(defun decode-utf-8-from-stream-old (stream)
 	(let (	(bit-array)
 			(bytes (make-array 1	
 						:element-type '(simple-bit-vector 8)
 						:adjustable t
 						:fill-pointer 1
-						:initial-element (byte-to-bits (read-byte stream)))))
+						:initial-element (int-to-bit-leading-zeros (read-byte stream)))))
 		(loop for i from 0 to 3 do
 			(if (= (aref (aref bytes 0) i) 1)
-				(vector-push-extend (byte-to-bits (read-byte stream)) bytes)
+				(vector-push-extend (int-to-bit-leading-zeros (read-byte stream)) bytes)
 				(return)))
 		(setf bit-array (case (length bytes)
 							(1 (make-array 7 
@@ -117,4 +124,19 @@
 																(subseq (aref bytes 2) 2)
 																(subseq (aref bytes 3) 2))))))
 	(bit-to-int bit-array 0 (- (length bit-array) 1))))
-								
+
+(defun decode-utf-8-from-stream (stream)
+	"Decode (known) UTF-8 character from stream"
+	(let ((b (read-byte stream)))
+		(cond
+			((> b 239)	(+ 	(ash (ldb (byte 5 0) b) 24)
+							(ash (- (read-byte stream) 128) 16)
+							(ash (- (read-byte stream) 128) 8)
+								 (- (read-byte stream) 128)))
+			((> b 223) 	(+ 	(ash (ldb (byte 5 0) b) 16)
+							(ash (- (read-byte stream) 128) 8)
+								 (- (read-byte stream) 128)))
+			((> b 191) 	(+ 	(ash (ldb (byte 5 0) b) 8)
+							(- (read-byte stream) 128)))
+			((< b 192) 		 b))))
+		

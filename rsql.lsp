@@ -22,4 +22,8 @@
 (load "strings.lsp")
 (load "password.lsp")
 (load "read.lsp")
+(load "write.lsp")
+(load "jli.lsp")
 (load "json.lsp")
+(load "xml.lsp")
+(load "csv.lsp")
