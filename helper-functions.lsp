@@ -23,7 +23,7 @@
 ; Binary Helper functions
 (declaim (ftype (function (integer) array) int-to-bit))
 (declaim (ftype (function (integer) array) byte-to-bits))
-(declaim (ftype (function (array &optional (integer 0) (integer 7)) integer) bit-to-int))
+(declaim (ftype (function (array &optional (integer *) (integer *)) integer) bit-to-int))
 
 ; Hash-table Helper-functions
 (declaim (ftype (function (array) array) copy-jli))
@@ -38,6 +38,8 @@
 ; Write Helpers
 (declaim (ftype (function (stream integer)) write-8bit-value))
 (declaim (ftype (function (stream integer)) write-16bit-value))
+(declaim (ftype (function (stream integer)) write-32bit-value))
+(declaim (ftype (function (stream integer integer)) write-30bit-typevalue))
 (declaim (ftype (function (stream integer)) write-64bit-value))
 (declaim (ftype (function (stream integer)) write-64bit-big-endian))
 (declaim (ftype (function (stream integer)) write-signed-8bit-value))

@@ -4,6 +4,13 @@
 	"Determines whether a string is entirely a number"
 	(numberp (read-from-string str)))
 
+(defun to-keyword (str)	
+	(read-from-string
+		(format nil ":~a" str)))
+		
+(defun from-keyword (kw)
+	(format nil "~a" kw))
+
 (defun compare-string-values (operator x y)
 	"Convert a simple operator to test on a string"
 	(let (	(xn (read-from-string x))
@@ -11,7 +18,7 @@
 
 		(cond
 			((and (numberp xn) (numberp yn)) 							; If the strings are actually numbers, compare them as such
-				(if (eq operator '!=) 	
+				(if (eq operator '!=)
 					(not (= xn yn))
 					(funcall operator xn yn)))
 			((eq operator '=)	(string= x y))

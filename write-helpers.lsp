@@ -8,12 +8,43 @@
 	(write-byte value stream))
 
 (defun write-16bit-value (stream value)
-  (let ((high-byte (ldb (byte 8 8) value))
-        (low-byte (ldb (byte 8 0) value)))
-		
-    (write-byte high-byte stream)
-    (write-byte low-byte stream)))
+    (write-byte (ldb (byte 8 8) 	value) stream)
+    (write-byte (ldb (byte 8 0) 	value) stream))
 
+(defun write-32bit-value (stream value)
+	"Write a 32-bit integer to an unsigned-byte 8 stream"
+	(write-byte (ldb (byte 8 0)		value) stream)
+	(write-byte (ldb (byte 8 8)		value) stream)
+	(write-byte (ldb (byte 8 16)	value) stream)
+	(write-byte (ldb (byte 8 24)	value) stream))
+
+(defun write-typevalue-old (stream value elm-type)
+	"Write a 30bit unsigned integer with a 2-bit type indicator (ELM-TYPE)"
+	(when (or (> value 1073741824) (< value 0))
+		(error "~a is out of range; must be 30-bit unsigned (max 1073741824)" value))
+		
+	(let (	(bit-array (make-array 32 	:element-type 'bit
+									:initial-element 0))
+			(value-bits (int-to-bit value)))
+	; 0 [array], 1 for [hash-table], 2 for [string], 3 for [integer]
+	(cond
+		((eq elm-type 2) 	(setf (aref bit-array 0) 1))
+		((eq elm-type 1)	(setf (aref bit-array 1) 1))
+		((eq elm-type 0))	; 00 is already sat by :initial-element 0
+		(t 					(setf (aref bit-array 0) 1)
+							(setf (aref bit-array 1) 1)))
+	(setf (subseq bit-array (- 32 (length value-bits))) (subseq value-bits 0))
+	(write-custom-bit-array stream bit-array)))
+
+(defun write-30bit-typevalue (stream value elm-type)
+	"Write a 30bit unsigned integer with a 2-bit type indicator (ELM-TYPE)"
+	(when (or (> value 1073741824) (< value 0))
+		(error "~a is out of range; must be 30-bit unsigned (max 1073741824)" value))
+	(write-byte (logior (ldb (byte 8 24) value) (ash elm-type 6)) stream)	; Set the first to bits to 00, 01, 10 or 11 based on ELM-TYPE
+	(write-byte (ldb (byte 8 16)		value) stream)
+	(write-byte (ldb (byte 8 8)	value) stream)
+	(write-byte (ldb (byte 8 0)	value) stream))
+	
 
 (defun write-64bit-value (stream value)
 	"Write a 64-bit integer to an unsigned-byte 8 stream"
@@ -74,7 +105,7 @@
 	"Write a custom bit-sequence (divisible by 8 (1 byte)) to an unsigned-byte 8 stream"
 	(loop for i from 0 below (length bit-array) by 8 for newbyte = 0
 		do (loop for j from 0 to 7
-			do (when (aref bit-array (+ i j))
+			do (when (= (aref bit-array (+ i j)) 1)
 				(setf newbyte (logior newbyte (ash 1 (- 7 j))))))
 		(write-byte newbyte stream)))
 		

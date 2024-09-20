@@ -1,0 +1,22 @@
+// R# Meta Language example and prototype file
+
+// Example of function declarations
+DECLARE hello_world  TAKING string string integer RETURNING nothing;
+DECLARE hello_string TAKING string string integer RETURNING string;
+
+
+// Example of functions definitions
+DEFINE hello_world str1 str2 count AS {
+	"Prints STR1 and STR2 separated by a whitespace COUNT times"
+	LOOP for i to count {
+		PRINT "~a ~a" str1 str2;}}
+		
+DEFINE hello_string str1 str2 count AS {
+	"Returns STR1 and STR2 separated by a whitespace as a string only once"
+	LOOP for i to count {
+		GET_PRINT "~a ~a" str1 str2;}}
+		
+
+str str1 = "Hello";
+hello_world ("Hello" "World" 3);
+str1 += hello_string("World" "String" 3);

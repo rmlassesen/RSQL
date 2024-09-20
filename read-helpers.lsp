@@ -10,11 +10,11 @@
 
 (defun read-bytes-to-bit-array (stream bytes)
 	"Reads BYTES number of bytes from STREAM and returns a bit-array of size 8*BYTES"
-	(let ( (bt) (bit-array (* 8 bytes) :element-type 'bit))
+	(let ( (bt) (bit-array (make-array (* 8 bytes) :element-type 'bit)))
 		(dotimes (l bytes)
 			(setf bt (read-byte stream))
 			(dotimes (i 8)
-				(setf (aref bit-array (+ i (* 8 l)) (ldb (byte 1 (- 7 i)) bt)))))
+				(setf (aref bit-array (+ i (* 8 l))) (ldb (byte 1 (- 7 i)) bt))))
 		bit-array))
 
 (defun read-16bit-value (stream)
@@ -22,16 +22,30 @@
 			(high-byte (read-byte stream)))
 			(+ (ash high-byte 8) low-byte)))
 
-(defun read-64bit-value (stream)
+(defun read-32bit-value (stream)
 	(+ (ash (read-byte stream) 0)
 	   (ash (read-byte stream) 8)
 	   (ash (read-byte stream) 16)
-	   (ash (read-byte stream) 24)
-	   (ash (read-byte stream) 32)
-	   (ash (read-byte stream) 40)
-	   (ash (read-byte stream) 48)
-	   (ash (read-byte stream) 56)))
+	   (ash (read-byte stream) 24)))
 
+(defun read-30bit-typevalue-old (stream)
+	"Read 2bit type indicator and 30bit value from stream"
+	(let ((bit-array (read-bytes-to-bit-array stream 4))) 	; Read 4 bytes from the stream into a bit array
+		(cons 
+			(bit-to-int 									; Read the value of the first two bits
+				(subseq bit-array 0 2) 0 1)
+			(bit-to-int 									; Read the value of the last 30 bits
+				(subseq bit-array 2) 0 29))))
+
+(defun read-30bit-typevalue (stream)
+	"Read 2bit type indicator and 30bit value from stream"
+	(let ((b (read-byte stream)))
+		(cons 	(ldb (byte 8 6) b)
+				(+ 	(ash (ldb (byte 6 0) b) 24)
+					(ash (read-byte stream) 16)
+					(ash (read-byte stream) 8)
+					(read-byte stream)))))
+	
 (defun read-64bit-big-endian (stream)
 	"Read a 64-bit integer in big-endian format from an unsigned-byte 8 stream"
 	(let ((value 0))
@@ -39,13 +53,13 @@
 			(setf value (logior (ash value 8) (read-byte stream))))
 		value))
 
+
 (defun utf-8-to-string (stream len)
 	"Read a UTF-8 encoded string of length LEN from STREAM"
-	(with-output-to-string (str)
-		(dotimes (_ len)
-			(write-char (code-char (decode-utf-8-from-stream stream)) str))
+	(let ((str (make-array len :element-type 'base-char :fill-pointer len)))
+		(dotimes (i len)
+			(setf (aref str i) (code-char (decode-utf-8-from-stream stream))))
 		str))
-		
 	
 ; Read signed bytes from the stream, to get also negative values etc.
 (defun read-signed-byte-8 (stream)
