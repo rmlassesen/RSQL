@@ -2,18 +2,6 @@
 ; JavaScript Object Notation Lisp Interpretation
 
 ; JLI takes form as a simple array of hash-tables, representing each {},[] encapsulation with an array of hash-tables
-(declaim (ftype (function (array keyword symbol string &optional list) array) find-in-jli))
-(declaim (ftype (function (array keyword &optional number) t) jli-entry))
-(declaim (ftype (function (string stream)) write-string-to-stream))
-(declaim (ftype (function (t stream)) write-element))
-(declaim (ftype (function (hash-table stream)) write-hash-table))
-(declaim (ftype (function (array stream)) write-array))
-(declaim (ftype (function (array string)) write-jli))	
-
-(declaim (ftype (function (stream) t) read-element))
-(declaim (ftype (function (stream integer) hash-table) read-hash-table))
-(declaim (ftype (function (stream integer) array) read-array))
-(declaim (ftype (function (string) array) read-jli))
 
 ; Return-list encapsules a list of :keywords as KEYS, of which entries from the records to return
 ; No return-list returns all/* (temp function for DEV)

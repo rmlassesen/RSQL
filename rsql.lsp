@@ -1,7 +1,7 @@
 ; R#UNE Structured Query Lisp - (:rascal)
 ; Common Lisp custom query language
 
-;ONLY FOR TESTING - BETWEEN THIS
+; ONLY FOR TESTING - BETWEEN THIS
 (defun ex () (sb-ext:exit))
 (defun clear() (format t "~A[H~@*~A[J" #\escape))
 (defun reload() (load "rsql.lsp"))
@@ -11,12 +11,14 @@
 (defun r() (setf *mystream* (open "test.ts" :direction :input :element-type '(unsigned-byte 8))))
 (defun c() (close *mystream*))
 
-;ONLY FOR TESTING - AND THIS
+; ONLY FOR TESTING - AND THIS
 
 
 (ql:quickload "ironclad") ; Ironclad library for encryption and security
 
+(load "declarations.lsp")
 (load "helper-functions.lsp")
+(load "datetime.lsp")
 (load "floats.lsp")
 (load "decimal.lsp")
 (load "strings.lsp")

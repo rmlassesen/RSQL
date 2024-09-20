@@ -7,15 +7,6 @@
 ; JavaScript Object Notation Lisp Interpretation
 
 ; JLI takes form as a simple array of hash-tables, representing each {},[] encapsulation with an array of hash-tables
-
-(declaim (ftype (function (stream) string) read-json-key))
-(declaim (ftype (function (stream)) read-json-value))
-(declaim (ftype (function (stream) hash-table) json-record-to-hash))
-(declaim (ftype (function (string) array) make-jli-from-json))
-(declaim (ftype (function (stream) array) make-jli-from-json-stream))
-(declaim (ftype (function (string) array) jli-from-json-file))
-(declaim (ftype (function (hash-table) string) json-string-from-jli-record))
-(declaim (ftype (function (array) string) json-string-from-jli))
 			
 (defun read-json-key (stream)
 	"Read substring from STREAM as key from current position until :, removing quotes"

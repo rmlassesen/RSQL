@@ -44,12 +44,13 @@
 (declaim (ftype (function (stream integer)) write-64bit-big-endian))
 (declaim (ftype (function (stream integer)) write-signed-8bit-value))
 (declaim (ftype (function (stream integer)) write-signed-64bit-value))
+(declaim (ftype (function (stream integer)) write-64bit-big-endian))
 (declaim (ftype (function (stream array)) write-8bit-charseq))
 (declaim (ftype (function (stream array)) write-16bit-charseq))
 (declaim (ftype (function (stream array)) write-custom-bit-array))
-(declaim (ftype (function (stream array)) write-utf-8-charseq))
-(declaim (ftype (function (stream float)) write-32-bit-float))
-(declaim (ftype (function (stream float)) write-64-bit-float))
+(declaim (ftype (function (stream array))write-utf-8-charseq))
+(declaim (ftype (function (stream number)) write-32-bit-float))
+(declaim (ftype (function (stream number)) write-64-bit-float))
 (declaim (ftype (function (stream number)) write-32-bit-decimal))
 (declaim (ftype (function (stream number)) write-64-bit-decimal))
 (declaim (ftype (function (stream string)) write-argon2-password))
@@ -57,6 +58,7 @@
 (declaim (ftype (function (stream string)) write-bcrypt-password))
 (declaim (ftype (function (stream string)) write-date))
 (declaim (ftype (function (stream string)) write-datetime))
+
 
 ; Read Helpers
 (declaim (ftype (function (stream) integer) read-8bit-value))
