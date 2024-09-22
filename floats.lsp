@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Floating-point numbers
 (defun dec-to-bit (value mantissa)
 	"Convert a decimal part into bits"
@@ -14,7 +15,6 @@
 			(setf (aref bit-array i) (aref bit-array j))
 			(incf i))
 		bit-array))
-
 			
 (defun make-32-bit-exponent (value int-bits dec-bits)
 	(let (	(exponent (make-array 8 :element-type 'bit :initial-element 0))

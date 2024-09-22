@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Write helper-functions
 
 ; Data-stream  is opened as an 8-bit stream

@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Read Helper-functions
 
 
@@ -108,10 +109,10 @@
 	(64-bit-to-decimal (read-bytes-to-bit-array stream 8)))
 
 (defun read-32-bit-float (stream)
-	32-bit-to-float (read-bytes-to-bit-array stream 4))
+	(32-bit-to-float (read-bytes-to-bit-array stream 4)))
 	
 (defun read-64-bit-float (stream)
-	64-bit-to-float (read-bytes-to-bit-array stream 8))
+	(64-bit-to-float (read-bytes-to-bit-array stream 8)))
 
 ; Passwords - salted, please
 (defun read-argon2-password (stream password)

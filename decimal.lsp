@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Custom decimal numbers
 ; The decimal datatype mimics the scientific notation, not by using a string
 ; But by simply defining the decimal placement with an exponent
@@ -5,8 +6,8 @@
 ; 7 bits are reserved for the exponent, allowing an exponent of max 127
 ; 1 bit is reserved as a sign-bit, to identify the polarity of the value itself
 
-(defun split-decimal-string (str)
-	(let* (( valuestr (write-to-string str)) (pos (position #\. valuestr)))
+(defun split-decimal-string (value)
+	(let* (( valuestr (write-to-string value)) (pos (position #\. valuestr)))
 		(list (subseq valuestr 0 pos) (subseq valuestr (+ pos 1)))))
 		
 (defun decimal-to-32-bit (value)
@@ -56,6 +57,18 @@
 		bit-array))
 
 (defun 32-bit-to-decimal (bit-array)
+	(let (	(sign (aref bit-array 8))
+			(signexp (aref bit-array 0))
+			(exponent (bit-to-int bit-array 1 7))
+			(value (bit-to-int bit-array 9 31)))
+			
+		(when (= signexp 1) (setf exponent (- 0 exponent)))
+		(setf value (* value (expt 10 exponent)))
+		(when (= sign 1) (setf value (- 0 value)))
+		  value))
+
+(defun 64-bit-to-decimal (bit-array)
+	"Unfinished!"
 	(let (	(sign (aref bit-array 8))
 			(signexp (aref bit-array 0))
 			(exponent (bit-to-int bit-array 1 7))

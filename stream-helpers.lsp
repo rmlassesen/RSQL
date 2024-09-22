@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Helper functions for streams
 
 ; IMPORTANT function returns a STREAM and MUST BE CLOSED after use : (CLOSE STREAM)

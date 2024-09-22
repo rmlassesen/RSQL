@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; JSON as a datatype
 ; Creation of JSON-like-objects in Lisp
 ; Possibility of importing these from .json files
