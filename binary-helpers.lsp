@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Binary Helper functions
 ; Functions to help converting and handling bits and bytes, such as conversion to integers
 

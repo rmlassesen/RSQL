@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; CSV as a datatype
 ; Creation of JSON-like-objects in Lisp, to capture the structure of CSV
 ; Possibility of importing these from .CSV files

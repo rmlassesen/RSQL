@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Datetime formats
 ; Note that string formats are converted by an integers placement in a string, and is not separated by delimiters;
 ; Thus, you can use any separator (of one character length) in the date-time formats

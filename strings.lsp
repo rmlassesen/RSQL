@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Strings in UTF-8
 ; Encode charcode values from 0-127 in 1 byte	(1. byte prefixed with 0: 0xxxxxxx)		Remaining length 7-bit
 ; From 128-2047 in two bytes					(1. byte prefixed with 110: 110xxxxx)	Remaining length 11-bit
@@ -115,7 +116,7 @@
 																(subseq (aref bytes 2) 2)
 																(subseq (aref bytes 3) 2))))))
 	(bit-to-int bit-array 0 (- (length bit-array) 1))))
-
+	
 (defun decode-utf-8-from-stream (stream)
 	"Decode (known) UTF-8 character from stream"
 	(let ((b (read-byte stream)))

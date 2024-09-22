@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Return value from table row
 
 (defun get_table (table_name)

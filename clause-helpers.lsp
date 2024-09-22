@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; (SQL) Clause Helper functions
 
 (defun to-clause-list (a b c)

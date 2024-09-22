@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Helper functions for Hash-tables
 
 (defun copy-hash-table (hash-tbl)

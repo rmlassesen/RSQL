@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; XML as a datatype
 ; Creation of JSON-like-objects in Lisp, to capture the structure of XML
 ; Possibility of importing these from .XML files

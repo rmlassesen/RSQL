@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Password data-type
 ; Stores and acceses paswords as a hashed password, salt and method as a single entry
 ; Using Ironclad library's salt and KDF functionality (ironclad::xxxx)

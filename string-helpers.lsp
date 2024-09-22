@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Helper functions for strings
 
 (defun string-is-number (str)

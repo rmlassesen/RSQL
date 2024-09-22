@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; Helper functions needed in several pieces of the code 
 
 (deftype rwhitespaces () '(member #\Space #\Tab #\Newline #\Return))
@@ -48,7 +49,7 @@
 (declaim (ftype (function (stream array)) write-8bit-charseq))
 (declaim (ftype (function (stream array)) write-16bit-charseq))
 (declaim (ftype (function (stream array)) write-custom-bit-array))
-(declaim (ftype (function (stream array))write-utf-8-charseq))
+(declaim (ftype (function (stream array)) write-utf-8-charseq))
 (declaim (ftype (function (stream number)) write-32-bit-float))
 (declaim (ftype (function (stream number)) write-64-bit-float))
 (declaim (ftype (function (stream number)) write-32-bit-decimal))
@@ -69,7 +70,7 @@
 (declaim (ftype (function (stream integer) string) utf-8-to-string))
 (declaim (ftype (function (stream) integer) read-signed-byte-8))
 (declaim (ftype (function (stream) integer) read-signed-64bit-value))
-(declaim (ftype (function (stream integer) string) read-16bit-charseq))
+(declaim (ftype (function (stream integer) string) read-8bit-charseq))
 (declaim (ftype (function (stream integer) string) read-16bit-charseq))
 (declaim (ftype (function (stream) number) read-32-bit-decimal))
 (declaim (ftype (function (stream) number) read-64-bit-decimal))

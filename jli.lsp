@@ -1,3 +1,4 @@
+(in-package :rsql)
 ; JSON-like-object - JSON Lisp Interpretation JLI (pronunciation: Jelly EN-UK)
 ; JavaScript Object Notation Lisp Interpretation
 

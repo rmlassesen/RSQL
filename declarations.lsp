@@ -1,7 +1,7 @@
+(in-package :rsql)
 ; Declarations of 'primary' functions
 
 ; Strings
-
 (declaim (ftype (function () array) unknown-char))
 (declaim (ftype (function (integer) array) 1-byte-utf-8))
 (declaim (ftype (function (integer) array) 2-byte-utf-8))
@@ -10,7 +10,33 @@
 (declaim (ftype (function (integer) t) encode-utf-8))
 (declaim (ftype (function (stream) integer) decode-utf-8-from-stream))
 
-(declaim (inline decode-utf-8-from-stream))
+
+; Floats
+
+(declaim (ftype (function (float integer) array) dec-to-bit))
+(declaim (ftype (function (float array array) array) make-32-bit-exponent))
+(declaim (ftype (function (float array array) array) make-64-bit-exponent))
+(declaim (ftype (function (float) (or array list)) float-to-32-bit))
+(declaim (ftype (function (float) (or array list)) float-to-64-bit))
+(declaim (ftype (function (array) integer) calculate-mantissa))
+(declaim (ftype (function (array) float) 32-bit-to-float))
+(declaim (ftype (function (array) float) 64-bit-to-float))
+
+; Decimals
+
+(declaim (ftype (function (number) list) split-decimal-string))
+(declaim (ftype (function (number) array) decimal-to-32-bit))
+(declaim (ftype (function (number) array) decimal-to-64-bit))
+(declaim (ftype (function (array) number) 32-bit-to-decimal))
+(declaim (ftype (function (array) number) 64-bit-to-decimal))
+
+; Password
+
+(declaim (ftype (function (string) array) make-8bit-char-array))
+(declaim (ftype (function () t) make-salt))
+(declaim (ftype (function (string t) t)  hash-argon2-password))
+(declaim (ftype (function (string t) t)  hash-bcrypt-password))
+(declaim (ftype (function (string t) t)  hash-scrypt-password))
 
 ; JLI
 
@@ -57,10 +83,10 @@
 
 ; Datetime
 
-(declaim (ftype (function (integer) array)  datetime-from-timestamp))
+(declaim (ftype (function (integer) array) datetime-from-timestamp))
 (declaim (ftype (function (string) array)  datetime-from-string))
 (declaim (ftype (function (string) array)  date-from-string))
-(declaim (ftype (function () integer)  now))
+(declaim (ftype (function () array)  now))
 (declaim (ftype (function (integer integer integer) string)  date-to-string))
 (declaim (ftype (function (integer integer integer) string)  date-to-iso-string))
 (declaim (ftype (function (integer integer integer) string)  us-date-to-string))
