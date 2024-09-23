@@ -1,9 +1,33 @@
 ; R#UNE Structured Query Lisp - (:rascal)
 ; Common Lisp custom query language
 
+; ONLY FOR TESTING - BETWEEN THIS
+(defun ex () (sb-ext:exit))
+(defun clear() (format t "~A[H~@*~A[J" #\escape))
+(defun reload() (load "rsql.lsp"))
+
+(defvar *mystream* nil)
+(defun w() (setf *mystream* (open "test.ts" :direction :output :if-exists :supersede :element-type '(unsigned-byte 8))))
+(defun r() (setf *mystream* (open "test.ts" :direction :input :element-type '(unsigned-byte 8))))
+(defun c() (close *mystream*))
+
+; ONLY FOR TESTING - AND THIS
+
 (defpackage :rsql
   (:use :cl))
 (in-package :rsql)
+
+; ONLY FOR TESTING - BETWEEN THIS
+(defun ex () (sb-ext:exit))
+(defun clear() (format t "~A[H~@*~A[J" #\escape))
+(defun reload() (load "rsql.lsp"))
+
+(defvar *mystream* nil)
+(defun w() (setf *mystream* (open "test.ts" :direction :output :if-exists :supersede :element-type '(unsigned-byte 8))))
+(defun r() (setf *mystream* (open "test.ts" :direction :input :element-type '(unsigned-byte 8))))
+(defun c() (close *mystream*))
+
+; ONLY FOR TESTING - AND THIS
 
 (defvar *data-dir* "Lists/")
 (defvar *datatypes* 	 (make-hash-table :test 'equalp))
@@ -31,18 +55,6 @@
 (setf (gethash "time" 		*datatypes*) 15)	(setf (gethash 15 *datatypes-enum*) "time")
 (setf (gethash "year" 		*datatypes*) 16)	(setf (gethash 16 *datatypes-enum*) "year")
 
-; ONLY FOR TESTING - BETWEEN THIS
-(defun ex () (sb-ext:exit))
-(defun clear() (format t "~A[H~@*~A[J" #\escape))
-(defun reload() (load "rsql.lsp"))
-
-(defvar *mystream* nil)
-(defun w() (setf *mystream* (open "test.ts" :direction :output :if-exists :supersede :element-type '(unsigned-byte 8))))
-(defun r() (setf *mystream* (open "test.ts" :direction :input :element-type '(unsigned-byte 8))))
-(defun c() (close *mystream*))
-
-; ONLY FOR TESTING - AND THIS
-
 (ql:quickload "ironclad") ; Ironclad library for encryption and security
 (declaim (optimize (speed 3) (debug 0)))
 
@@ -59,3 +71,4 @@
 (load "json.lsp")
 (load "xml.lsp")
 (load "csv.lsp")
+(load "sql.lsp")

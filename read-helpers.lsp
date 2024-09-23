@@ -46,6 +46,16 @@
 					(ash (read-byte stream) 16)
 					(ash (read-byte stream) 8)
 					(read-byte stream)))))
+
+(defun read-64bit-value (stream)
+	(+ (ash (read-byte stream) 0)
+	   (ash (read-byte stream) 8)
+	   (ash (read-byte stream) 16)
+	   (ash (read-byte stream) 24)
+	   (ash (read-byte stream) 32)
+	   (ash (read-byte stream) 40)
+	   (ash (read-byte stream) 48)
+	   (ash (read-byte stream) 56)))
 	
 (defun read-64bit-big-endian (stream)
 	"Read a 64-bit integer in big-endian format from an unsigned-byte 8 stream"

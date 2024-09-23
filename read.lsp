@@ -23,34 +23,31 @@
 ; Subsequently a function to read a sequence of chars as 8- and 16-bit from the stream
 
 ; Read table overview
-; Section 1: Row names in string as 8-bit chars
-; Row names are similarly prefaced with an integer containing the size/length of the name
-; Section 2: Row names as 8-bit chars, that is used as indexes. Default is id.
-; Section 3: Single 8-bit integer, no delimiter, identifies data-type of each row
-; Each section is prefaced with an integer containing the size of the section
+; Section 1: 1 byte containing the number of rows, and then row names as a string of 8-bit chars
+; Row names are additionally prefaced with an integer containing an integer containing the length of the name
+; And then ends with the datatype enumeration for that row
+; Section 2: Number of indexes(1 byte) then row names as 8-bit chars, that is used as indexes. Default is id.
+; These row-names are similarly prefaced with an integer containing the length of the name, but not the datatype
 
-(defun read-table-form (tbl_name)
-	(let ((section_length)(sections '())(file-path (concatenate 'string "Lists/" tbl_name ".tbl")))
-		(with-open-file (stream file-path
-						  :direction :input
-						  :element-type '(unsigned-byte 8))
-						  
-			(setf  section_length(read-8bit-value stream)) ; Get length of first section
-			(setf sections (list
-				(loop while (> section_length (file-position stream))
-					collect (read-8bit-charseq stream (read-8bit-value stream)))))
-			(setf section_length (+ section_length (read-8bit-value stream))) ; Get length of second section and add to length of first section
-			(setf sections (append sections (list
-				(loop while (> section_length (file-position stream))
-					collect (read-8bit-charseq stream (read-8bit-value stream))))))
+; STRUCTURE
+; Section_End_Pos(16-bit) Num_rows(8-bit) Row_length (8-bit) Row_name (8-bit charseq) Row_datatype (8-bit) 
+; Num_indexes (8-bit) Row_length (8-bit) Row_name (8-bit charseq)
 
-			(setf sections (append sections (list
-				(loop for byte = (read-byte stream nil) ; Read byte, return nil at EOF
-					while byte ; Continue until EOF
-					collect byte))))
-		) 				
-	)
-)
+(defun read-table-form (table-name)
+	(let ((rows '()) (indexes '()))
+		(with-open-file (stream (concatenate 'string *data-dir* table-name ".tbl")
+							:direction :input
+							:element-type '(unsigned-byte 8))
+			(loop for i from 0 below (read-byte stream) do 			 			; Iterate across the row names
+				(push (cons 										 			; Push a CONS to ROWS
+						(read-8bit-charseq stream (read-byte stream))			; with row name
+						(read-byte stream)) rows))					 			; and datatype enumeration
+			(loop for i from 0 below (read-byte stream) do						; Iterate across indexes
+				(push (read-8bit-charseq stream (read-byte stream)) indexes))	; Push index row names to INDEXES
+		(list 	table-name 														; Return a table-form
+				(list-to-array (reverse rows))
+				(list-to-array (reverse indexes))))))
+
 
 (defun read-data-size (tbl_name idx)
 	(with-open-file (stream (concatenate 'string "Lists/" idx "_" tbl_name ".tbl")
