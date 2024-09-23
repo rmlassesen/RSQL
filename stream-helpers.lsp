@@ -44,19 +44,24 @@
 			(read-char stream nil nil)
 			(return))))
 
-(defun read-single-quote-string (stream)
+(defun read-single-quote-string (stream char)
 	"Read a string encapsulated by 'single-quotes'"
+	(declare (ignore char))
 	(let (	(str 	(make-array 0 	:element-type 'character			; Create an array to build a string in
 									:fill-pointer 0
 									:adjustable t)))
-		(loop for c = (read-char stream nil nil)
+		(loop for c = (peek-char nil stream nil nil)
 			while c do
-					(when (char= (peek-char nil stream nil nil) #\')	; Return if the next character is a single quote, unless it's escaped
-							(unless (char= c #\\)
-								(vector-push-extend c str)
-								(return)))
-					(vector-push-extend c str))
-		(read-char stream)
+				(cond 
+					((eql c #\\)
+						(file-position stream (+ 1 (file-position stream)))
+						(if (eql (peek-char nil stream nil nil) #\')
+							(vector-push-extend #\' str)
+							(vector-push-extend #\\ str)))
+					((eql c #\') (return))								; Return if the next character is a single quote, unless it's escaped
+					(t (vector-push-extend c str)))
+					(file-position stream (+ 1 (file-position stream))))
+		(file-position stream (+ 1 (file-position stream)))
 		str))
 		
 (defun read-non-alpha (stream)
@@ -64,7 +69,7 @@
 		(cond 
 			((char= p #\") 		(read stream))
 			((char= p #\') 		(read-char stream)						; Read char for a clean READ-SINGLE-QUOTE-STRING start
-								(read-single-quote-string stream))
+								(read-single-quote-string stream p))
 			((char= p #\()		(read-char stream)						; Read char for a clean READ-CLAUSE start
 								(read-clause stream))
 			((typep p 'rcondoperators) 

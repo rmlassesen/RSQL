@@ -50,23 +50,48 @@
 		(concatenate 'string (format nil "~a" a) " " (format nil "~a" b)))
 			lst))
 
-(defun first-non-alphanumeric-char (str)
+(defun first-non-alphanumeric-char (str &optional (start 0) (end (length str)))
 	"Finds first non-alphanumeric character in STR"
-	(loop for i from 0 below (length str)
-		for char = (char str i)
-			if (not (alphanumericp char))
-				return i))
-		
-(defun first-alphanumeric-char (str)
-	"Finds first alphanumeric character in STR"
-	(loop for i from 0 below (length str)
-		for char = (char str i)
-			if (alphanumericp char)
-				return i))
+	(position-if (lambda (c) (not (alphanumericp c))) 
+					str 
+					:start start 
+					:end end))
 
-(defun first-non-zero-in-string (str)
+(defun first-alphanumeric-char (str &optional (start 0) (end (length str)))
+	"Finds first alphanumeric character in STR"
+	(position-if (lambda (c) (alphanumericp c))
+					str 
+					:start start 
+					:end end))
+					
+(defun first-space-or-paren (str &optional (start 0) (end (length str)))
+	"Finds first alphanumeric character in STR"
+	(position-if (lambda (c) (or (eql c #\Space) (eql c #\()))
+					str 
+					:start start 
+					:end end))
+
+(defun first-non-zero-in-string (str &optional (start 0) (end (length str)))
   "Find the first position of a character in string that is not #\0"
-  (position-if (lambda (c) (not (eql c #\0))) str))
+  (position-if (lambda (c) (not (eql c #\0)))
+					str
+					:start start
+					:end end))
+
+(defun remove-end-space (str)
+	"Checks if the last charecter is a space and removes it"
+	(when (eql (aref str (- (length str) 1)) #\Space)
+		(setf str (subseq str 0 (- (length str) 2))))
+	str)
+	
+(defun remove-start-space (str)
+	"Checks if the first charecter is a space and removes it"
+	(when (eql (aref str 0) #\Space)
+		(setf str (subseq str 1)))
+	str)
+	
+(defun remove-spaces (str)
+	(remove-if #'(lambda (c) (char= c #\Space)) str))
 
 (defun or-find (orlist str &optional (start 0))
 	"Returns a CONS (position delimiter) of the first occurence
@@ -79,3 +104,11 @@
 						(setf ret (cons npos item)))
 					(setf ret (cons npos item)))))
 		ret))
+		
+(defun list-to-array (lst)
+	"Convert a list to an array"
+	(let ((arr (make-array (length lst) :element-type t)) (i 0))
+		(dolist (obj lst)
+			(setf (aref arr i) obj)
+			(incf i))
+		arr))

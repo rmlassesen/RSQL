@@ -7,7 +7,7 @@
 (declaim (ftype (function (integer) array) 2-byte-utf-8))
 (declaim (ftype (function (integer) array) 3-byte-utf-8))
 (declaim (ftype (function (integer) array) 4-byte-utf-8))
-(declaim (ftype (function (integer) t) encode-utf-8))
+(declaim (ftype (function (character) t) encode-utf-8))
 (declaim (ftype (function (stream) integer) decode-utf-8-from-stream))
 
 

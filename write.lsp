@@ -19,13 +19,14 @@
 ; 16	Year
 
 ; Write table overview
-; Section 1: Row names in string as 8-bit chars
-; Row names are additionally prefaced with an integer containing the size/length of the name
-; Section 2: Row names as 8-bit chars, that is used as indexes. Default is id.
-; Section 3: Single 8-bit integer, no delimiter, identifies data-type of each row
-; Each section is prefaced with an integer containing the size of the section
+; Section 1: 1 byte containing the number of rows, and then row names as a string of 8-bit chars
+; Row names are additionally prefaced with an integer containing an integer containing the length of the name
+; And then ends with the datatype enumeration for that row
+; Section 2: Number of indexes(1 byte) then row names as 8-bit chars, that is used as indexes. Default is id.
+; These row-names are similarly prefaced with an integer containing the length of the name, but not the datatype
 
-; Section_End_Pos(16-bit) Num_rows(8-bit) Row_length (8-bit) Row_datatype (8-bit) Row_name (8-bit charseq)
+; STRUCTURE
+; Section_End_Pos(16-bit) Num_rows(8-bit) Row_length (8-bit) Row_name (8-bit charseq) Row_datatype (8-bit) 
 ; Num_indexes (8-bit) Row_length (8-bit) Row_name (8-bit charseq)
 
 ; Arguments for table form "Table name as String" (list of (cons with row name and data-type)) (list of indexes)
@@ -33,94 +34,26 @@
 
 (declaim (ftype (function (string list list)) write-table-form))
 
-
-(defun make-table-form (create-string)
-	(nstring-downcase create-string)				; Make entire string lower case for easier manipulation
-	(let* (	(table-name) (rows '()) (indexes '())
-			(npos (search "(" create-string))
-			(row-data (split-string create-string "," (+ 1 npos))))	
-		(if (char= (aref create-string (- npos 1)) #\Space)
-			(setf table-name (subseq create-string 0 (- npos 1)))
-			(setf table-name (subseq create-string 0 npos)))
-		(loop for e across row-data do
-			(if (setf npos (search "primary key" e))
-				(progn
-					(let ((idx (subseq e (+ 12 npos) (position #\) e :start npos))))
-						(if (some (lambda (r) (equalp (car r) idx)) rows)
-							(push idx indexes)
-							(error "~a is NOT a specified row" idx))))
-				(progn
-					(setf npos (position-if #'alphanumericp e))
-					(push 
-						(cons 	(subseq e npos (setf npos (search " " e :start2 npos)))
-								(gethash
-									(subseq e (+ 1 npos) (setf npos (position-if-not #'alphanumericp e :start (+ 1 npos))))						
-									*datatypes*))
-						rows))))				
-		(list table-name (reverse rows) (reverse indexes))))
-
-(defun test-t ()
-	(let (( table-form (make-table-form "brugergrupper (id int(2) NOT NULL AUTO_INCREMENT, gruppe varchar(25) NOT NULL, PRIMARY KEY(id)) ENGINE=InnoDB;")))
-		(write-table-form 	(first 	table-form)
-							(second table-form)
-							(third 	table-form))))
-
 (defun write-table-form (table-name rows indexes)
 	"Write .tbl file with information about the specific table"
-	(let ((fpos))
-		(with-open-file (stream (concatenate 'string *data-dir* table-name ".tbl")
+	(with-open-file (stream (concatenate 'string *data-dir* table-name ".tbl")
+						:direction :output
+						:if-exists :supersede
+						:element-type '(unsigned-byte 8))
+		(write-8bit-value stream (length rows))					; Write the number of rows
+		(dolist (r rows)										; Iterate over the rows-list
+			(write-8bit-value stream (length (car r)))			; Write the length of the row-name
+			(write-8bit-charseq stream (car r))					; Write the row-name as simple 8-bit chars
+			(write-8bit-value stream (cdr r)))					; Write the datatype (integer)
+		(write-8bit-value stream (length indexes))				; Write the number of Index Rows
+		(dolist (r indexes)										; Iterate over Index Rows
+			(write-8bit-value stream (length r))				; Write the length of the row-name
+			(write-8bit-charseq stream r)						; Write the row-name as simple 8-bit chars
+			(with-open-file (stream (concatenate 'string *data-dir* r "_" table-name ".idx")
 							:direction :output
 							:if-exists :supersede
 							:element-type '(unsigned-byte 8))
-			(write-16bit-value stream 0) 							; Reserve 2 bytes for file-position of the end of the section
-			(write-8bit-value stream (length rows))					; Write the number of rows
-			(dolist (r rows)										; Iterate over the rows-list
-				(write-8bit-value stream (length (car r)))			; Write the length of the row-name
-				(write-8bit-value stream (cdr r))					; Write the datatype (integer)
-				(write-8bit-charseq stream (car r)))				; Write the row-name as simple 8-bit chars
-			(setf fpos (file-position stream))						; Save the curent file-position
-			(file-position stream 0)								; Return to start of file
-			(write-16bit-value stream fpos)							; Write the section end file-position at the reserved 2 bytes
-			(file-position stream fpos)								; Return to end of first section
-			(write-8bit-value stream (length indexes))				; Write the number of Index Rows
-			(dolist (r indexes)										; Iterate over Index Rows
-				(write-8bit-value stream (length r))				; Write the length of the row-name
-				(write-8bit-charseq stream r)						; Write the row-name as simple 8-bit chars
-				(with-open-file (stream (concatenate 'string *data-dir* r "_" table-name ".idx")
-								:direction :output
-								:if-exists :supersede
-								:element-type '(unsigned-byte 8))
-								(write-64bit-value stream 0))))))	; Create an indexing file, and preface it with 0, as a data-file-size designator
-
-(defun row-names-size (rows)
-  "Calculate the total byte-size for Section"
-  (+ (apply #'+ (mapcar #'length rows)) (length rows) 1))
-
-(defun write-table-form-old (tbl_name rows idx dtype)
-	"Write .tbl file with information about the specific table"
-	(let (	(file-path (concatenate 'string "Lists/" tbl_name ".tbl")))
-		(with-open-file (stream file-path
-							:direction :output
-							:if-exists :supersede
-							:element-type '(unsigned-byte 8))
-							
-			(write-8bit-value stream (row-names-size rows)) ; Write the length of Section 1
-			(dolist (r rows)
-				(write-8bit-value stream (length r))		; Write each row-name prefaced with length
-				(write-8bit-charseq stream r))
-			(write-8bit-value stream (row-names-size idx)) ; Write the length of Section 2
-			(dolist (r idx)
-				(write-8bit-value stream (length r))
-				(write-8bit-charseq stream r))
-			(dolist (tp dtype)
-				(write-8bit-value stream tp)))
-		
-		(dolist (r idx)
-			(with-open-file (stream (concatenate 'string "Lists/" r "_" tbl_name ".idx")
-								:direction :output
-								:if-exists :supersede
-								:element-type '(unsigned-byte 8))
-								(write-64bit-value stream 0))))) ; Create an indexing file, and preface it with 0, as a data-file-size designator					
+							(write-64bit-value stream 0)))))	; Create an indexing file, and preface it with 0, as a data-file-size designator		
 
 
 ; Insert a row / write row
@@ -143,7 +76,8 @@
 		(1 (write-8bit-value stream data)) 			; Byte (8-bit)
 		(2 (write-64bit-value stream data)) 		; Signed Integer (64-bit)
 		(3 (write-signed-64bit-value stream data)) 	; Unsigned Integer (64-bit)
-		(4 (write-utf-8-charseq stream data)) 		; String (UTF-8)
+		(4 (write-32bit-value stream (length data)) ; String (UTF-8)
+		   (write-utf-8-charseq stream data)) 		
 		(5 (write-32-bit-float stream data)) 		; IEEE 754 floating point 32-bit representation
 		(6 (write-64-bit-float stream data)) 		; IEEE 754 floating point 64-bit representation
 		(7 (write-32-bit-decimal stream data)) 		; Custom signed decimal 32-bit representation
@@ -154,34 +88,41 @@
 	)
 	(file-position stream))
 
-; 
+(defun write-rows (table-name data-types insert-values indexes)
+	"Write a rows to the database file of table TABLE-NAME"
+	(let (( idx-streams (make-array (length indexes))))
+		(loop for i from 0 below (length indexes) do				; Open a stream for each PRIMARY KEY of the table
+			(setf (aref idx-streams i) 
+				(open (concatenate 'string 	
+						*data-dir* 
+						(aref indexes i)
+						"_" table-name ".idx")
+						:direction :io
+						:if-exists :overwrite
+						:element-type '(unsigned-byte 8))))
 
-(defun write-row (tbl_name num-rows data)
-	"Write a row/line to the database file of table(tbl_name)"
-	(let* (	(table-form tbl_name)
-			(rows (first table-form)) 
-			(idx (second table-form)) 
-			(dtype (third table-form))
-			(idx-streams (make-array (length idx)))
-			(data-size (read-data-size tbl_name (first idx))))
-		
-		(format t "Unused variables ~A ~A ~A ~A" data num-rows rows dtype)
-		(let ((i 0))
-			(dolist (r idx)
-				(setf (aref idx-streams i) (open (concatenate 'string "Lists/" r "_" tbl_name ".idx")
-											:direction :output
-											:if-exists :append
-											:element-type '(unsigned-byte 8))) ; Open a file-stream for each index-file
-				(incf i)))
-		(with-open-file (datastream (concatenate 'string "Lists/data" (data-file-number data-size) "_" tbl_name ".idx")
-											:direction :output
-											:if-exists :append
-											:element-type '(unsigned-byte 8))
-											
-											
-											
-											)
-	
-		
-		
-		(loop for stream across idx-streams do (when stream (close stream))))) ; Close each index-file-stream
+		(with-open-file (wstream  									; Open write-stream for data-file
+							(concatenate 'string
+								*data-dir*
+								(princ-to-string
+									(data-file-number 
+										(read-64bit-value (aref idx-streams 0))))
+								"_" table-name ".dat")
+							:direction :output
+							:if-does-not-exist :create
+							:if-exists :append
+							:element-type '(unsigned-byte 8))
+					
+		(loop for stream across idx-streams do						; Skip the first 64-bit of every index-streams
+			(file-position stream 8))
+		(loop for row across insert-values do						; Loop through every value-set
+			(loop for stream across idx-streams do					; TEMPORARY write the line-start-position in all index-files 
+				(write-32bit-value stream (file-position wstream)))
+			(loop for i from 0 below (length row) do				; Loop through each entry in value-set
+				(write-data wstream 								; Write corresponding data
+							(aref row i)
+							(aref data-types i))))
+		(loop for stream across idx-streams do						; Write the file-length at the begininng of all index-files (Needs modification to include all file's sizes in combination)
+				(write-32bit-value stream (file-position wstream))
+				(when stream (close stream))))))					; Close the streams
+
