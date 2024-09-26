@@ -47,6 +47,7 @@
 (declaim (ftype (function (stream integer)) write-signed-8bit-value))
 (declaim (ftype (function (stream integer)) write-signed-64bit-value))
 (declaim (ftype (function (stream integer)) write-64bit-big-endian))
+(declaim (ftype (function (stream keyword keyword keyword keyword)) write-field-info))
 (declaim (ftype (function (stream array)) write-8bit-charseq))
 (declaim (ftype (function (stream array)) write-16bit-charseq))
 (declaim (ftype (function (stream array)) write-custom-bit-array))

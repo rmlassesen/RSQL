@@ -91,6 +91,15 @@
 		(write-byte (ldb (byte 8 48) unsigned-value) stream)
 		(write-byte (ldb (byte 8 56) unsigned-value) stream)))
 
+(defun write-field-info (stream primary unique auto_increment nul)
+	"Store fireld information in a single byte and write it to STREAM"
+	(let ((b 0))
+		(when (eql primary		  :TRUE) (incf b 1))
+		(when (eql unique		  :TRUE) (incf b 2))
+		(when (eql auto_increment :TRUE) (incf b 4))
+		(when (eql nul			  :TRUE) (incf b 8))
+		(write-byte b stream)))
+
 ; Character sequences/Strings
 (defun write-8bit-charseq (stream charseq)
 	"Write a string as a 8-bit character sequence"

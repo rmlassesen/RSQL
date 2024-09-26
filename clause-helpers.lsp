@@ -54,6 +54,7 @@
 		(loop for c = (read-char stream nil nil)
 			while c do
 				(cond 
+					((char= c #\;) (return)) 							; Return IF terminating char ; is read
 					((not (alphanumericp c))
 						(when (char= c #\)) (return))
 						(when (> (length variable) 0)
