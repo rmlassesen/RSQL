@@ -112,3 +112,44 @@
 			(setf (aref arr i) obj)
 			(incf i))
 		arr))
+
+(defun equal-string (stream str len)	
+	"Check if a string in STREAM is EQUAL to str"
+	(unless (= len (length str)) (return-from equal-string nil))
+	(loop for i from 0 below len do
+		(when (not (eql (code-char
+			(decode-utf-8-from-stream stream))
+			(aref str i))) (return-from equal-string nil)))
+	t)
+		
+(defun like-string (stream str)	
+	"Check if a string in STREAM is LIKE %str"
+	(loop for c across str do
+		(when (not (eql (code-char
+			(decode-utf-8-from-stream stream))
+			c)) (return-from like-string nil)))
+	t)
+	
+(defun like-string-end (stream str len)	
+	"Check if a string in STREAM is LIKE str%"
+	(file-position stream (+
+		(file-position stream)
+		(- len (length str))))
+	(loop for c across str do
+		(when (not (eql (code-char
+			(decode-utf-8-from-stream stream))
+			c)) (return-from like-string-end nil)))
+	t)
+
+(defun like-in-string (stream str len)	
+	"Check if a string in STREAM is LIKE %str%"
+	(let ((i 0))
+		(loop for l from 0 below len do
+			(if (eql (code-char
+					 (decode-utf-8-from-stream stream))
+					 (aref str i))
+				(incf i)
+				(setf i 0))
+			(when (= i (length str))
+				(return-from like-in-string t)))
+		nil))

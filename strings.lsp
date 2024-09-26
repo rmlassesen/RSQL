@@ -119,8 +119,9 @@
 	
 (defun decode-utf-8-from-stream (stream)
 	"Decode (known) UTF-8 character from stream"
-	(let ((b (read-byte stream)))
+	(let ((b (read-byte stream nil nil)))
 		(cond
+			((not b) 0)
 			((> b 239)	(+ 	(ash (ldb (byte 5 0) b) 24)
 							(ash (- (read-byte stream) 128) 16)
 							(ash (- (read-byte stream) 128) 8)

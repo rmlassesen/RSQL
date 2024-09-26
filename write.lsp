@@ -1,59 +1,87 @@
 (in-package :rsql)
 ; Data-types: 
-; 0		Index-integer (64-bit unsigned big endian integer) 
-; 1		Bytes(unsigned 8-bit)
-; 2		Integers(signed 64-bit)
-; 3		Positive Only Integers(unsigned 64-bit)
-; 4		Char-sequences/String(UTF-8)
-; 5		IEEE 754 floating point 32-bit representation
-; 6		IEEE 754 floating point 64-bit representation
-; 7		Custom signed decimal 32-bit representation
-; 8		Custom signed decimal 64-bit representation
-; 9		Password hashed with bcrypt
-; 10	Password hashed with scrypt
-; 11	Password hashed with argon2i
-; 12	Date
-; 13	Datetime
-; 14	Timestamp
-; 15	Time
-; 16	Year
+; 0		Index-integer (64-bit unsigned big endian integer)  (NULL is represented with 64 1-ones (2^64))
+; 1		Bytes(unsigned 8-bit)								(BYTES can't be NULL, but 00000000 or 11111111 is okay)
+; 2		Integers(signed 64-bit)								(NULL is represented with 64 1-ones (2^64))
+; 3		Positive Only Integers(unsigned 64-bit)				(NULL is represented with 64 1-ones (2^64))
+; 4		Char-sequences/String(UTF-8)						(NULL is represented with character code 0: #\Nul)
+; 5		IEEE 754 floating point 32-bit representation		(NULL is represented with 32 1-ones (2^32))
+; 6		IEEE 754 floating point 64-bit representation		(NULL is represented with 64 1-ones (2^64))
+; 7		Custom signed decimal 32-bit representation			(NULL is represented with 32 1-ones (2^32))
+; 8		Custom signed decimal 64-bit representation			(NULL is represented with 64 1-ones (2^64))
+; 9		Password hashed with bcrypt							(PASSWORDS cannot be NULL)
+; 10	Password hashed with scrypt							(PASSWORDS cannot be NULL)
+; 11	Password hashed with argon2i						(PASSWORDS cannot be NULL)
+; 12	Date												(NULL is represented by 0000-00-00 - effectively all bytes are zero)
+; 13	Datetime											(NULL is represented by 0000-00-00T00:00:00.00  - effectively all bytes are zero)
+; 14	Timestamp											(NULL is represented by 40 1-ones (2^40))
+; 15	Time												(NULL is represented by 00:00:00.00  - effectively all bytes are zero)
+; 16	Year												(NULL is 0000  - effectively all bytes are zero)
 
 ; Write table overview
-; Section 1: 1 byte containing the number of rows, and then row names as a string of 8-bit chars
-; Row names are additionally prefaced with an integer containing an integer containing the length of the name
-; And then ends with the datatype enumeration for that row
-; Section 2: Number of indexes(1 byte) then row names as 8-bit chars, that is used as indexes. Default is id.
-; These row-names are similarly prefaced with an integer containing the length of the name, but not the datatype
+; Section 1: 1 byte containing the number of fields, and then field names as a string of 8-bit chars
+; Field names are additionally prefaced with an integer containing an integer containing the length of the name
+; Then it has the datatype enumeration for that field, and then an 8 bit representation of truthness of 
+; 	- PRIMARY KEY
+;	- UNIQUE 
+;	- AUTO_INCREMENT
+;	- NULL (NOT NULL :FALSE)
+
+; Section 2: Number of indexes(1 byte) then field names as 8-bit chars, that is used as indexes. Default is id.
+; These field-names are similarly prefaced with an integer containing the length of the name, but not the datatype
 
 ; STRUCTURE
-; Section_End_Pos(16-bit) Num_rows(8-bit) Row_length (8-bit) Row_name (8-bit charseq) Row_datatype (8-bit) 
-; Num_indexes (8-bit) Row_length (8-bit) Row_name (8-bit charseq)
+; Num_fields(8-bit) field_length (8-bit) field_name (8-bit charseq)  field_datatype (8-bit) 
+; Num_indexes (8-bit) field_length (8-bit) field_name (8-bit charseq)
 
-; Arguments for table form "Table name as String" (list of (cons with row name and data-type)) (list of indexes)
+; Arguments for table form "Table name as String" (list of (cons with field name and data-type)) (list of indexes)
 
 
-(declaim (ftype (function (string list list)) write-table-form))
+(declaim (ftype (function (t)) write-table-form))
 
-(defun write-table-form (table-name rows indexes)
+(defun write-table-form (table-form)
 	"Write .tbl file with information about the specific table"
-	(with-open-file (stream (concatenate 'string *data-dir* table-name ".tbl")
+	(with-open-file (stream (concatenate 'string 
+										 *data-dir*
+										 (string *in-db*) "/"
+										 (string (name table-form)) 
+										 ".tbl")
 						:direction :output
 						:if-exists :supersede
 						:element-type '(unsigned-byte 8))
-		(write-8bit-value stream (length rows))					; Write the number of rows
-		(dolist (r rows)										; Iterate over the rows-list
-			(write-8bit-value stream (length (car r)))			; Write the length of the row-name
-			(write-8bit-charseq stream (car r))					; Write the row-name as simple 8-bit chars
-			(write-8bit-value stream (cdr r)))					; Write the datatype (integer)
-		(write-8bit-value stream (length indexes))				; Write the number of Index Rows
-		(dolist (r indexes)										; Iterate over Index Rows
-			(write-8bit-value stream (length r))				; Write the length of the row-name
-			(write-8bit-charseq stream r)						; Write the row-name as simple 8-bit chars
-			(with-open-file (stream (concatenate 'string *data-dir* r "_" table-name ".idx")
+		(write-8bit-value stream 							; Write the number of fields
+			(hash-table-count (fields table-form)))
+		(maphash (lambda (k v) 								; Iterate across the fields of the table
+			(setf k (string k))
+			(write-8bit-value stream (length k))			; Write the length of the field-name
+			(write-8bit-charseq stream k)					; Write the field-name as simple 8-bit chars
+			(write-8bit-value stream (datatype v))			; Write the datatype as an 8-bit integer
+			(write-field-info stream						; Write additional info in an 8-bit integer
+				(primary v)
+				(unique v)
+				(auto_increment v)
+				(nul v)))
+			(fields table-form))
+		(let ((pairs ""))
+			(write-8bit-value stream 						; Write the number of PRIMARY KEY fields
+			(hash-table-count (primary table-form)))		; (Preferably only 1, but more if the PRIMARY KEY is made up of multiple columns)
+			(maphash (lambda (k v)
+				(setf pairs 								; Construct PRIMARY KEY index file-name
+					(concatenate 'string pairs (string k) "_"))
+				(write-8bit-value stream v))				; Write each ROWNUM
+				(primary table-form))						; Create an indexing file for the PRIMARY KEY
+			(with-open-file (stream (concatenate 'string *data-dir* (string *in-db*) "/" pairs (string (name table-form)) ".idx")
+				:direction :output
+				:if-exists :supersede)))
+			
+		(write-8bit-value stream 							; Write the number of INDEXES fields
+			(hash-table-count (indexes table-form)))			
+		(maphash (lambda (k v)								; Write each ROWNUM
+			(write-8bit-value stream v)						; Create an indexing file for each index
+			(with-open-file (stream (concatenate 'string *data-dir* (string *in-db*) "/" k "_" (string (name table-form)) ".idx")
 							:direction :output
-							:if-exists :supersede
-							:element-type '(unsigned-byte 8))
-							(write-64bit-value stream 0)))))	; Create an indexing file, and preface it with 0, as a data-file-size designator		
+							:if-exists :supersede)))
+			(indexes table-form))))	
 
 
 ; Insert a row / write row
