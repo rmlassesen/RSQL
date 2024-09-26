@@ -5,6 +5,8 @@
 (defvar *SQL-readtable* (copy-readtable nil))  ; Create a global SQL readtable
 (defvar defaultreadtable (copy-readtable nil)) ; Create a standard readtalbe for reset - without any special characters in the variable name to be caught by the reader
 
+; SQL Parser
+
 ; Database / Schema handling
 
 ; Table Handling
@@ -22,3 +24,4 @@
 (load "sql-insert.lsp")
 (load "sql-clause.lsp")
 (load "sql-select.lsp")
+(load "sql-parser.lsp")

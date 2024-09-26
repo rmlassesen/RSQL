@@ -41,6 +41,27 @@
 (defclass schema ()
 	((tables :type hash-table :accessor tables :initform (make-hash-table))))
 
+(defun create-database (stream)
+	(let ((db-name (read stream nil nil)))
+		(unless db-name
+			(error "Statement is malformed: No database specified"))
+		(when (gethash db-name *schemas*)
+			(error "Database ~a already exists" db-name))
+		(setf (gethash db-name *schemas*)
+			(make-instance 'schema))
+		(with-open-file (stream (concatenate 'string *data-dir* "/schemas.rtb")
+					:direction :output
+					:if-exists :append
+					:if-does-not-exist :create)
+			(write-line table-name stream))))				; Write database name to schemas.rtb
+			
+
+(defun use-db (stream)
+	(let ((db-name (read stream nil nil)))
+		(unless (gethash db-name *schemas*)
+			(error "Database ~a does not exist" db-name))
+		(setf *in-db* db-name)))
+
 (defun make-tables (schema-name table-name)
 	(let* (	(table-form (read-table-form schema-name table-name))
 			(data-size (read-data-size (second table-form)))
@@ -59,12 +80,12 @@
 	
 (defun make-schema (schema-name)
 	(let ((sch (make-instance 'schema)))
-		(with-open-file 
+		(with-open-file 	
 			(stream (concatenate 
 						'string
 						*data-dir*  
-						(format nil "~a" schema-name)
-						"tables.rtb" )
+						(downcase (string schema-name)) 	; Only because lower-case file-names are pretier
+						"/tables.rtb" )
 					:if-does-not-exist :create 
 					:direction :input)
 										
