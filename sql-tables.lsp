@@ -23,14 +23,14 @@
 				((eql (aref rows i) 'AUTO_INCREMENT)			; When encountering AUTO_INCREMENT set auto_increment of CURRENT-FIELD to :TRUE
 					(setf ( auto_increment (gethash current-field (fields tbl))) :TRUE))
 				((listp (aref rows i)) )						; If object is a list, handle it as ARGUMENTS of the previous object
-				((gethash (aref rows i) *datatypes*)			; Check is symbol is a datatype - if so add datatype enumeration to number of CURRENT-FIELD
+				((gethash (aref rows i) *datatypes*)			; Check if symbol is a datatype - if so add datatype enumeration to number of CURRENT-FIELD
 						(setf (datatype (gethash current-field (fields tbl))) 
 						(gethash (aref rows i) *datatypes*)))
 				((eql (aref rows i) 'PRIMARY)					; When encountering PRIMARY expect KEY, otherwise ERROR
 					(when (not (eql (aref rows (+ 1 i)) 'KEY))
 						(error "Unexpected parameter: PRIMARY"))
 					(setf i (+ i 2))							; Increase I by 2 to reach argument/key list
-					(dolist (k (aref rows i))					; Iterate through key-list	 
+					(dolist (k (aref rows i))					; Iterate through key-list	
 						(unless (setf key (gethash k (fields tbl)))
 							(error "Provided PRIMARY KEY ~a is not a field" k))
 						(setf (primary key) :TRUE)
@@ -48,9 +48,16 @@
 	tbl))				
 
 (defun create-table (stream)
+	"Create a table-form from STREAM, write it to files, and store it in the schema"
 	(let ((table-form (make-table-form stream)))
-	
-	))
+		(when (gethash *in-db* *schemas*)
+			(when (gethash (name table-form)		; Check if the table already exist if so ERROR
+				(tables (gethash *in-db* *schemas*)))
+					(error "Table ~a already exist!" (name table-form))))
+		(write-table-form table-form)				; Write table-form data to files
+		(setf (gethash (name table-form)			; Insert table form in hash-table with key as 'table-name
+			(tables (gethash *in-db* *schemas*)))	; into SCHEMA of current database
+			table-form)))
 
 (defun test-t ()
 	(with-input-from-string (table-stream

@@ -53,8 +53,11 @@
 					:direction :output
 					:if-exists :append
 					:if-does-not-exist :create)
-			(write-line table-name stream))))				; Write database name to schemas.rtb
+			(write-line (string-downcase (string db-name)) stream))))				; Write database name to schemas.rtb
 			
+(defun test-create ()
+	(with-input-from-string (test-stream "create database test_db")
+	(sql-parse test-stream)))
 
 (defun use-db (stream)
 	(let ((db-name (read stream nil nil)))
@@ -63,19 +66,31 @@
 		(setf *in-db* db-name)))
 
 (defun make-tables (schema-name table-name)
-	(let* (	(table-form (read-table-form schema-name table-name))
-			(data-size (read-data-size (second table-form)))
-			(tbl (make-instance 'table 
-								:files (car data-size)
-								:rowcount (cdr data-size))))
-		(loop for i from 0 below (length (first table-form)) do					; Instantiate the fields with number and datatype
-			(setf (gethash (car (aref (first table-form) i)) (fields tbl))		; TODO: expand on READ-TABLE-FORM to return UNIQUE, PRIMARY, AUTO-INCREMENT and NULL
-				(make-instance 'field 	:number i
-										:datatype (cdr (aref (first table-form) i))
-										)))
-		(loop for idx across (second table-form) do
-			(setf (gethash idx (indexes tbl)) 0))))
-			
+	(let (	(table-form (read-table-form schema-name table-name))
+			(data-size ) (keys '()) (keypair "") (keytypes '()))
+		(maphash (lambda (k v)					; Create a list of FIELD-NAME and ROWNUM from TABLES:PRIMARY
+			(push (cons k v) keys))
+			(primary table-form))
+		(setf keys (sort keys (lambda (a b)		; Sort the keys by ROWNUM
+						(< (cdr a) (cdr b)))))
+		(dolist (k keys)
+			(push keytypes (datatype (gethash k (fields table-form))))
+			(setf keypair (concatenate 
+							'string 
+							keypair
+							(string (car k))
+							"_")))
+							
+		(setf data-size (read-data-size			; Read data-size (returns CONS of number of files and number of rows)
+							schema-name
+							table-name
+							(reverse keypair)
+							keytypes))
+		(setf (files table-form) 	(car data-size))
+		(setf (rowcount table-form) (cdr data-size))
+		table-form))
+		
+
 			
 	
 (defun make-schema (schema-name)
@@ -84,22 +99,22 @@
 			(stream (concatenate 
 						'string
 						*data-dir*  
-						(downcase (string schema-name)) 	; Only because lower-case file-names are pretier
+						(string-downcase (string schema-name)) 	; Only because lower-case file-names are pretier
 						"/tables.rtb" )
 					:if-does-not-exist :create 
-					:direction :input)
-										
+					:direction :input)						
 		(loop for l = (read stream nil nil)
 			while l do
 				(setf (gethash l (tables sch)) (make-tables schema-name l)))
 		sch)))
-	 
-(with-open-file 
-	(stream (concatenate 'string
-						*data-dir* 
-						"/schemas.rtb")
-					:if-does-not-exist :create 
-					:direction :input)
-	(loop for l = (read stream nil nil)
-		while l do
-			(setf (gethash l *schemas*) (make-schema l))))
+
+(defun init-databases ()	 
+	(with-open-file 
+		(stream (concatenate 'string
+							*data-dir* 
+							"/schemas.rtb")
+						:if-does-not-exist :create 
+						:direction :input)
+		(loop for l = (read stream nil nil)
+			while l do
+				(setf (gethash l *schemas*) (make-schema l)))))

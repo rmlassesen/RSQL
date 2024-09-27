@@ -1,6 +1,21 @@
 (in-package :rsql)
 ; Declarations of 'primary' functions
 
+; READ
+
+(declaim (ftype (function (stream integer &optional t) t) read-data))
+(declaim (ftype (function (stream integer) t) skip-data))
+(declaim (ftype (function (stream list) t) skip-multiple-data))
+(declaim (ftype (function (symbol symbol) t) read-table-form))
+(declaim (ftype (function (symbol symbol string list) cons) read-data-size))
+
+
+; WRITE
+
+(declaim (ftype (function (t)) write-table-form))
+(declaim (ftype (function (stream t integer)) write-data))
+(declaim (ftype (function (symbol array array array)) write-rows))
+
 ; Strings
 (declaim (ftype (function () array) unknown-char))
 (declaim (ftype (function (integer) array) 1-byte-utf-8))

@@ -36,12 +36,9 @@
 
 ; Arguments for table form "Table name as String" (list of (cons with field name and data-type)) (list of indexes)
 
-
-(declaim (ftype (function (t)) write-table-form))
-
 (defun write-table-form (table-form)
 	"Write .tbl file with information about the specific table"
-	(let ((pairs "") (table-name (downcase (string (name table-form)))))
+	(let ((pairs "") (table-name (string-downcase (string (name table-form)))))
 		(with-open-file (stream (concatenate 'string 
 											 *data-dir*
 											 (string *in-db*) "/"
@@ -66,27 +63,30 @@
 				(write-8bit-value stream 						; Write the number of PRIMARY KEY fields
 				(hash-table-count (primary table-form)))		; (Preferably only 1, but more if the PRIMARY KEY is made up of multiple columns)
 				(maphash (lambda (k v)
+					(setf k (string k))
 					(setf pairs 								; Construct PRIMARY KEY index file-name
-						(concatenate 'string pairs (string k) "_"))
-					(write-8bit-value stream v))				; Write each ROWNUM
+						(concatenate 'string pairs k "_"))
+					(write-8bit-value stream (length k))		; Write the length of the field-name
+					(write-8bit-charseq stream k)				; Write the field-name as simple 8-bit chars
+					(write-8bit-value stream v))				; Write ROWNUM of FIELD
 					(primary table-form))						; Create an indexing file for the PRIMARY KEY
-				(with-open-file (stream (concatenate 'string *data-dir* (string *in-db*) "/" pairs table-name ".idx")
+				(with-open-file (wstream (concatenate 'string *data-dir* (string *in-db*) "/" pairs table-name ".idx")
 					:direction :output
-					:if-exists :supersede)))
+					:if-exists :supersede))
 				
-			(write-8bit-value stream 							; Write the number of INDEXES fields
+			(write-8bit-value stream 							; Write the number of INDEXE fields
 				(hash-table-count (indexes table-form)))			
 			(maphash (lambda (k v)								; Write each ROWNUM
 				(write-8bit-value stream v)						; Create an indexing file for each index
-				(with-open-file (stream (concatenate 'string *data-dir* (string *in-db*) "/" k "_" table-name ".idx")
+				(with-open-file (wstream (concatenate 'string *data-dir* (string *in-db*) "/" k "_" table-name ".idx")
 									:direction :output
 									:if-exists :supersede)))
 				(indexes table-form))
-			(with-open-file (stream (concatenate 'string *data-dir* (string *in-db*) "/tables.rtb")
+			(with-open-file (wstream (concatenate 'string *data-dir* (string *in-db*) "/tables.rtb")
 								:direction :output
 								:if-exists :append
 								:if-does-not-exist :create)
-				(write-line table-name stream))))				; Write table name to tables.rtb
+				(write-line table-name wstream)))))				; Write table name to tables.rtb
 
 
 ; Insert a row / write row

@@ -61,31 +61,63 @@
 	))
 
 
+(defun skip-multiple-data (stream datatypes)
+	"Using SKIP-DATA skip a composition of multiple data-types"
+	(dolist (tp datatypes)
+		(unless (skip-data stream tp)
+			(return-from skip-multiple-data nil)))
+	t)
+
 ; Read table overview
-; Section 1: 1 byte containing the number of rows, and then row names as a string of 8-bit chars
-; Row names are additionally prefaced with an integer containing an integer containing the length of the name
-; And then ends with the datatype enumeration for that row
-; Section 2: Number of indexes(1 byte) then row names as 8-bit chars, that is used as indexes. Default is id.
-; These row-names are similarly prefaced with an integer containing the length of the name, but not the datatype
+; Section 1: 1 byte containing the number of fields, and then field names as a string of 8-bit chars
+; Field names are additionally prefaced with an integer containing an integer containing the length of the name
+; Then it has the datatype enumeration for that field stored in 8 bits , and then an 8 bit representation of truthness of 
+; 	- PRIMARY KEY
+;	- UNIQUE 
+;	- AUTO_INCREMENT
+;	- NULL (NOT NULL :FALSE)
+
+; Section 2: Number of indexes(1 byte) then field names as 8-bit chars, that is used as indexes. Default is id.
+; These field-names are similarly prefaced with an integer containing the length of the name, but not the datatype
 
 ; STRUCTURE
-; Section_End_Pos(16-bit) Num_rows(8-bit) Row_length (8-bit) Row_name (8-bit charseq) Row_datatype (8-bit) 
-; Num_indexes (8-bit) Row_length (8-bit) Row_name (8-bit charseq)
+; Num_fields(8-bit) field_length (8-bit) field_name (8-bit charseq)  field_datatype (8-bit) 
+; Num_indexes (8-bit) field_length (8-bit) field_name (8-bit charseq)
 
 (defun read-table-form (schema-name table-name)
-	(let ((rows '()) (indexes '()))
+	(let ((table-form (make-instance 'table))
+		  (current-field) (field-name) (field-info))
 		(with-open-file (stream (concatenate 'string *data-dir* (string schema-name) "/" (string table-name) ".tbl")
 							:direction :input
 							:element-type '(unsigned-byte 8))
-			(loop for i from 0 below (read-byte stream) do 			 			; Iterate across the row names
-				(push (cons 													; Push a CONS to ROWS
-						(read-from-string
-							(read-8bit-charseq stream (read-byte stream)))		; with row name
-						(read-byte stream)) rows))					 			; and datatype enumeration
-			(loop for i from 0 below (read-byte stream) do						; Iterate across indexes
-				(push (read-8bit-charseq stream (read-byte stream)) indexes))	; Push index row names to INDEXES
-		(list 	(list-to-array (reverse rows)) 									; Return a table-form
-				(list-to-array (reverse indexes))))))
+							
+
+			(loop for i from 0 below (read-byte stream) do 			 		; Iterate across the field names
+				(setf current-field (make-instance 'field :rownum i))		; Create a FIELD instance
+				(setf field-name 											; Read the FIELD name
+					(read-from-string
+						(read-8bit-charseq stream (read-byte stream))))
+				(setf (datatype current-field) (read-byte stream))			; Retrieve the datatype enumeration
+				(setf field-info (read-field-info stream))					; Retrieve the addition field-info
+				(setf (primary    	  current-field) (aref field-info 0))	; Extract field-info
+				(setf (unique	  	  current-field) (aref field-info 1))
+				(setf (auto_increment current-field) (aref field-info 2))
+				(setf (nul 			  current-field) (aref field-info 3))
+				(setf (gethash field-name									; Insert the field into the table-form
+						(fields table-form)) current-field)
+			
+				(when (eql (aref field-info 0) :TRUE)						; If field is a PRIMARY KEY add it to TABLES:PRIMARY
+					(setf (gethash field-name
+								(primary table-form)) 
+									(rownum current-field))))						
+			(loop for i from 0 below (read-byte stream) do					; Iterate across indexes
+				(setf field-name 											; Read the FIELD name
+					(read-from-string
+						(read-8bit-charseq stream (read-byte stream))))
+				(setf (gethash field-name 									; Insert field-name and rownum into TABLES:INDEXES
+						(indexes table-form))
+							(read-byte stream))))
+		 table-form))
 
 
 ; Read the indexing file to determine the number of files and rows used for a specific table.
@@ -96,24 +128,23 @@
 ; 			- A 32-bit integer representing the file position 
 ;			 (allowing files up to 4MB).
 
-;READ-DATA-SIZE reads the file number and iterates through the file, skipping data based on the field’s data type
+;READ-DATA-SIZE reads the file number and iterates through the file, skipping data based on the key-fields' data types
 ; and advancing 5 bytes per entry (1 byte for the file number and 4 bytes for the file position).
 
-
-(defun read-data-size (schema-name table-name key)
+(defun read-data-size (schema-name table-name keys keytypes)
 	"Returns a CONS of file number and ROW COUNT
-	KEY must be a CONS of FIELD NAME and DATA-TYPE"
+	KEYS already carry the neccesary _ for filename"
 	(with-open-file 
 		(stream (concatenate 'string 
 							 *data-dir*
 							 schema-name "/" 
-							 (car key) "_" 
+							 keys
 							 table-name ".tbl")
 						:direction :input
 						:element-type '(unsigned-byte 8))
 		(cons 	(read-8bit-value stream)
 				(loop	for i from 0
-						for d = (skip-data stream (cdr key))
+						for d = (skip-multiple-data stream keytypes)
 						while d do 
 							(file-position stream (+ 5 (file-position stream)))
 						finally (return i)))))
