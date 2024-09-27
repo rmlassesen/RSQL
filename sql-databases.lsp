@@ -74,17 +74,17 @@
 		(setf keys (sort keys (lambda (a b)		; Sort the keys by ROWNUM
 						(< (cdr a) (cdr b)))))
 		(dolist (k keys)
-			(push keytypes (datatype (gethash k (fields table-form))))
+			(push keytypes (datatype (gethash (car k) (fields table-form))))
 			(setf keypair (concatenate 
 							'string 
 							keypair
 							(string (car k))
 							"_")))
-							
+		
 		(setf data-size (read-data-size			; Read data-size (returns CONS of number of files and number of rows)
 							schema-name
 							table-name
-							(reverse keypair)
+							keypair
 							keytypes))
 		(setf (files table-form) 	(car data-size))
 		(setf (rowcount table-form) (cdr data-size))
