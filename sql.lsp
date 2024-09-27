@@ -26,7 +26,7 @@
 
 ; SQL Parser
 (declaim (ftype (function (stream)) sql-parse))
-(declaim (ftype (function (stream)) sql-parser))
+(declaim (ftype (function ()) sql-parser))
 
 ; Load files containing declared SQL functions
 (load "sql-readtable.lsp")
