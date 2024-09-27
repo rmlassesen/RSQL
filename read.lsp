@@ -44,6 +44,7 @@
 (defun skip-data (stream data-type)
 	(when (>= (file-position stream) (file-length stream))
 		(return-from skip-data nil))
+		
 	(case data-type	
 		(0 (file-position stream (+ 8 (file-position stream))))		; Index-integer (unsigned 64-bit big endian)
 		(1 (file-position stream (+ 1 (file-position stream)))) 	; Byte (8-bit)
@@ -134,12 +135,14 @@
 (defun read-data-size (schema-name table-name keys keytypes)
 	"Returns a CONS of file number and ROW COUNT
 	KEYS already carry the neccesary _ for filename"
+	(when (< (length keytypes) 1)
+		(return-from read-data-size (cons 0 0))) 
 	(with-open-file 
 		(stream (concatenate 'string 
 							 *data-dir*
-							 schema-name "/" 
+							 (string schema-name) "/" 
 							 keys
-							 table-name ".tbl")
+							 (string table-name) ".idx")
 						:direction :input
 						:element-type '(unsigned-byte 8))
 		(cons 	(read-8bit-value stream)
