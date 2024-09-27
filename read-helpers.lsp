@@ -65,7 +65,7 @@
 		value))
 
 
-(defun utf-8-to-string (stream len)
+(defun read-utf-8-charseq (stream len)
 	"Read a UTF-8 encoded string of length LEN from STREAM"
 	(let ((str (make-array len :element-type 'base-char :fill-pointer len)))
 		(dotimes (i len)
@@ -94,6 +94,21 @@
     (if (>= (logand unsigned-value #x8000000000000000) 0) ; Check if the sign bit is set
         (- unsigned-value (ash 1 64))
         unsigned-value)))
+
+(defun read-field-info (stream)
+	"Retrieve fireld information from a single byte from  STREAM"
+	(let ((info (make-array 4 :element-type 't :initial-element :FALSE))
+		  (b (read-byte stream)))
+		(when (logbitp 3 b)
+			(setf (aref info 3) :TRUE))
+		(when (logbitp 2 b)
+			(setf (aref info 2) :TRUE))
+		(when (logbitp 1 b)
+			(setf (aref info 1) :TRUE))
+		(when (logbitp 0 b)
+			(setf (aref info 0) :TRUE))
+		info))
+
 		
 (defun read-8bit-charseq (stream length)
 	"Read a sequence of characters encoded as 8-bit values from the stream"

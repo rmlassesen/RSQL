@@ -90,7 +90,7 @@
 (defun read-element (stream)
 	(let ((typevalue (read-30bit-typevalue stream)))
 	(case (car typevalue)
-		(2	(utf-8-to-string stream (cdr typevalue)))
+		(2	(read-utf-8-charseq stream (cdr typevalue)))
 		(1	(read-hash-table stream (cdr typevalue)))
 		(0	(read-array stream (cdr typevalue)))
 		(3 	(read-32bit-value stream)))))
@@ -101,7 +101,7 @@
 		(loop for _ from 0 below ht-size do
 			(setf (gethash 
 					(to-keyword 
-						(utf-8-to-string stream 
+						(read-utf-8-charseq stream 
 							(read-8bit-value stream)))
 					new-ht)
 					(read-element stream)))

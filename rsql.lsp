@@ -60,6 +60,7 @@
 
 (load "declarations.lsp")
 (load "helper-functions.lsp")
+(load "sql.lsp")
 (load "datetime.lsp")
 (load "floats.lsp")
 (load "decimal.lsp")
@@ -71,4 +72,5 @@
 (load "json.lsp")
 (load "xml.lsp")
 (load "csv.lsp")
-(load "sql.lsp")
+
+(init-databases)
