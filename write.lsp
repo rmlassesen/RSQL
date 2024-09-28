@@ -72,7 +72,9 @@
 					(primary table-form))						; Create an indexing file for the PRIMARY KEY
 				(with-open-file (wstream (concatenate 'string *data-dir* (string *in-db*) "/" pairs table-name ".idx")
 					:direction :output
-					:if-exists :supersede))
+					:if-exists :supersede
+					:element-type '(unsigned-byte 8))
+					(write-8bit-value wstream 1))				; Write 1 to the file for "Number of files"
 				
 			(write-8bit-value stream 							; Write the number of INDEXE fields
 				(hash-table-count (indexes table-form)))			

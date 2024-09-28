@@ -64,6 +64,8 @@
 
 (defun skip-multiple-data (stream datatypes)
 	"Using SKIP-DATA skip a composition of multiple data-types"
+	(when (> (length datatypes) 0)
+		(return-from skip-multiple-data nil))
 	(dolist (tp datatypes)
 		(unless (skip-data stream tp)
 			(return-from skip-multiple-data nil)))
@@ -106,7 +108,6 @@
 				(setf (nul 			  current-field) (aref field-info 3))
 				(setf (gethash field-name									; Insert the field into the table-form
 						(fields table-form)) current-field)
-			
 				(when (eql (aref field-info 0) :TRUE)						; If field is a PRIMARY KEY add it to TABLES:PRIMARY
 					(setf (gethash field-name
 								(primary table-form)) 
