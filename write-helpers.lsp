@@ -19,24 +19,6 @@
 	(write-byte (ldb (byte 8 16)	value) stream)
 	(write-byte (ldb (byte 8 24)	value) stream))
 
-(defun write-typevalue-old (stream value elm-type)
-	"Write a 30bit unsigned integer with a 2-bit type indicator (ELM-TYPE)"
-	(when (or (> value 1073741824) (< value 0))
-		(error "~a is out of range; must be 30-bit unsigned (max 1073741824)" value))
-		
-	(let (	(bit-array (make-array 32 	:element-type 'bit
-									:initial-element 0))
-			(value-bits (int-to-bit value)))
-	; 0 [array], 1 for [hash-table], 2 for [string], 3 for [integer]
-	(cond
-		((eq elm-type 2) 	(setf (aref bit-array 0) 1))
-		((eq elm-type 1)	(setf (aref bit-array 1) 1))
-		((eq elm-type 0))	; 00 is already sat by :initial-element 0
-		(t 					(setf (aref bit-array 0) 1)
-							(setf (aref bit-array 1) 1)))
-	(setf (subseq bit-array (- 32 (length value-bits))) (subseq value-bits 0))
-	(write-custom-bit-array stream bit-array)))
-
 (defun write-30bit-typevalue (stream value elm-type)
 	"Write a 30bit unsigned integer with a 2-bit type indicator (ELM-TYPE)"
 	(when (or (> value 1073741824) (< value 0))
@@ -73,23 +55,46 @@
 
 (defun write-signed-8bit-value (stream value)
 	"Write a signed 8-bit integer to an unsigned-byte 8 stream"
-	(when (or (< value -128) (> value 127))(error "~A Out of range for signed 8-bit integer" value)) 
+	(when (or (< value -128) (> value 127))(error "~A Out of range for signed 8-bit integer" value))
 	(write-byte (logand value #xFF) stream)) ; Make unsigned by masking with 0xFF
 
+(defun write-signed-16bit-value (stream value)
+	"Write a signed 16-bit integer to an unsigned-byte 8 stream"
+	(when (or (< value -32768) (> value 32767))(error "~A Out of range for signed 16-bit integer" value)) 
+	(setf value (logand value #xFFFF)) 		; Make unsigned by masking with 0xFFFF
+	(write-byte (ldb (byte 8 0)  value) stream)
+	(write-byte (ldb (byte 8 8)  value) stream))
+
+(defun write-signed-24bit-value (stream value)
+	"Write a signed 24-bit integer to an unsigned-byte 8 stream"
+	(when (or (< value -8388608) (> value 8388607))(error "~A Out of range for signed 24-bit integer" value)) 
+	(setf value (logand value #xFFFFFF)) 		; Make unsigned by masking with 0xFFFFFF
+	(write-byte (ldb (byte 8 0)  value) stream)
+	(write-byte (ldb (byte 8 8)  value) stream)
+	(write-byte (ldb (byte 8 16) value) stream))
+	
+(defun write-signed-32bit-value (stream value)
+	"Write a signed 32-bit integer to an unsigned-byte 8 stream"
+	(when (or (< value -2147483648) (> value 2147483647))(error "~A Out of range for signed 32-bit integer" value)) 
+	(setf value (logand value #xFFFFFFFF)) 		; Make unsigned by masking with 0xFFFFFFFF
+	(write-byte (ldb (byte 8 0)  value) stream)
+	(write-byte (ldb (byte 8 8)  value) stream)
+	(write-byte (ldb (byte 8 16) value) stream)
+	(write-byte (ldb (byte 8 24) value) stream))	
 
 (defun write-signed-64bit-value (stream value)
 	"Write a signed 64-bit integer to an unsigned-byte 8 stream"
 	(when (or (< value -9223372036854775808) (> value 9223372036854775807))
 		(error "~A Out of range for signed 64-bit integer" value))
-	(let ((unsigned-value (logand value #xFFFFFFFFFFFFFFFF)))  ; Mask to 64 bits
-		(write-byte (ldb (byte 8 0)  unsigned-value) stream)
-		(write-byte (ldb (byte 8 8)  unsigned-value) stream)
-		(write-byte (ldb (byte 8 16) unsigned-value) stream)
-		(write-byte (ldb (byte 8 24) unsigned-value) stream)
-		(write-byte (ldb (byte 8 32) unsigned-value) stream)
-		(write-byte (ldb (byte 8 40) unsigned-value) stream)
-		(write-byte (ldb (byte 8 48) unsigned-value) stream)
-		(write-byte (ldb (byte 8 56) unsigned-value) stream)))
+	(setf value (logand value #xFFFFFFFFFFFFFFFF))  ; Mask to 64 bits
+		(write-byte (ldb (byte 8 0)  value) stream)
+		(write-byte (ldb (byte 8 8)  value) stream)
+		(write-byte (ldb (byte 8 16) value) stream)
+		(write-byte (ldb (byte 8 24) value) stream)
+		(write-byte (ldb (byte 8 32) value) stream)
+		(write-byte (ldb (byte 8 40) value) stream)
+		(write-byte (ldb (byte 8 48) value) stream)
+		(write-byte (ldb (byte 8 56) value) stream))
 
 (defun write-field-info (stream primary unique auto_increment nul)
 	"Store fireld information in a single byte and write it to STREAM"
@@ -193,3 +198,18 @@
 			(setf (subseq dt-arr (- 40	(length (aref dt 5))) 40)	(aref dt 5))
 			(setf (subseq dt-arr (- 47	(length (aref dt 6))) 47)	(aref dt 6))
 			(write-custom-bit-array stream dt-arr)))
+			
+(defun write-timestamp (stream value)
+	"Write timestamp which is a 40-bit integer"
+	(write-byte (ldb (byte 8 0)   value) stream)
+	(write-byte (ldb (byte 8 8)   value) stream)
+	(write-byte (ldb (byte 8 16)  value) stream)
+	(write-byte (ldb (byte 8 24)  value) stream)
+	(write-byte (ldb (byte 8 32)  value) stream))
+	
+	
+(defun write-time (stream time-string))
+
+(defun write-year (stream year-string)
+	(let ((year (read-from-string year-string)))
+		(wite-16-bit-value stream year)))

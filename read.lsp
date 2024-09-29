@@ -1,23 +1,4 @@
 (in-package :rsql)
-; Data-types: 
-; 0		Index-integer (64-bit unsigned big endian integer) 
-; 1		Bytes(unsigned 8-bit)
-; 2		Integers(signed 64-bit)
-; 3		Positive Only Integers(unsigned 64-bit)
-; 4		Char-sequences/String(UTF-8)
-; 5		IEEE 754 floating point 32-bit representation
-; 6		IEEE 754 floating point 64-bit representation
-; 7		Custom signed decimal 32-bit representation
-; 8		Custom signed decimal 64-bit representation
-; 9		Password hashed with bcrypt
-; 10	Password hashed with scrypt
-; 11	Password hashed with argon2i
-; 12	Date
-; 13	Datetime
-; 14	Timestamp
-; 15	Time
-; 16	Year
-
 ; Data-stream  is opened as an 8-bit stream
 ; Following function definitions are for reading 8-bit, 16-bit and 32-bit values from the stream
 ; Subsequently a function to read a sequence of chars as 8- and 16-bit from the stream
@@ -64,6 +45,8 @@
 
 (defun skip-multiple-data (stream datatypes)
 	"Using SKIP-DATA skip a composition of multiple data-types"
+	(when (> (length datatypes) 0)
+		(return-from skip-multiple-data nil))
 	(dolist (tp datatypes)
 		(unless (skip-data stream tp)
 			(return-from skip-multiple-data nil)))
@@ -106,7 +89,6 @@
 				(setf (nul 			  current-field) (aref field-info 3))
 				(setf (gethash field-name									; Insert the field into the table-form
 						(fields table-form)) current-field)
-			
 				(when (eql (aref field-info 0) :TRUE)						; If field is a PRIMARY KEY add it to TABLES:PRIMARY
 					(setf (gethash field-name
 								(primary table-form)) 

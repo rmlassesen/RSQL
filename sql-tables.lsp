@@ -62,4 +62,4 @@
 (defun test-t ()
 	(with-input-from-string (table-stream
 				"create table mock_data (id int(2) NOT NULL AUTO_INCREMENT, first_name varchar(25) NOT NULL, last_name varchar(25) NOT NULL, email varchar(25) NOT NULL, gender varchar(25) NOT NULL, ip_address varchar(25) NOT NULL, PRIMARY KEY(id)) ENGINE=InnoDB;")
-	(sql-parser table-stream)))
+	(sql-parse table-stream)))

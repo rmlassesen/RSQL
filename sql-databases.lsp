@@ -49,6 +49,7 @@
 			(error "Database ~a already exists" db-name))
 		(setf (gethash db-name *schemas*)
 			(make-instance 'schema))
+		(ensure-directories-exist (concatenate 'string *data-dir* (string-downcase (string *in-db*)) "/"))
 		(with-open-file (stream (concatenate 'string *data-dir* "/schemas.rtb")
 					:direction :output
 					:if-exists :append
@@ -74,7 +75,7 @@
 		(setf keys (sort keys (lambda (a b)		; Sort the keys by ROWNUM
 						(< (cdr a) (cdr b)))))
 		(dolist (k keys)
-			(push keytypes (datatype (gethash (car k) (fields table-form))))
+			(push (datatype (gethash (car k) (fields table-form))) keytypes)
 			(setf keypair (concatenate 
 							'string 
 							keypair

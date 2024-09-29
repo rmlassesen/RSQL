@@ -1,6 +1,35 @@
 (in-package :rsql)
 ; SQL Insert Handling
 
+(defun make-inster-form (stream)
+	"Extract insert data from stream"
+	(let* ((*readtable* *SQL-readtable*)
+		  (table-name (read stream))
+		  (table-fields (fields (gethash table-name 
+							(tables (gethash *in-db* *schemas)))))
+		  (fields  (make-array (hash-table-count table-fields) :element-type t))
+		  (fvalues (make-array (hash-table-count table-fields) :element-type t))
+		  (dtypes  (make-array (hash-table-count table-fields) :element-type t))
+		  (valuelist (read stream)))
+		(cond 
+			((eql valuelist 'VALUES)
+				(maphash (lambda (k v)
+					(setf (aref fields (rownum v)) k)				; Assign FIELD NAME to array matching the fields ROW NUMBER
+					(setf (aref dtypes (rownum v)) (datatype v)))	; Assign the FIELD DATATYPE in the same way
+					(table-fields))
+					(setf valuelist (read stream))
+					(when (not (listp valuelist))
+						(error "INSERT statement is malformed at: ~a" valuelist))
+					(loop for val in valuelist 
+						  for i from 0 do
+							(unless (checktype val (aref dtypes i))
+								(error "~a does not match its designated datatype: ~a" val
+									(gethash (aref dtypes i) *datatypes-enum*)))
+							(setf (aref fvalues i) val)))
+					
+			((listp valuelist))
+			(t (error "INSERT statement is malformed near: ~a" valuelist)))
+	
 (defun make-insert-form (stream)
 	"Extract insert data from stream"
 	(let ((*readtable* *SQL-readtable*) (table-name) (vallen) (rows)
