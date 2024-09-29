@@ -1,23 +1,4 @@
 (in-package :rsql)
-; Data-types: 
-; 0		Index-integer (64-bit unsigned big endian integer)  (NULL is represented with 64 1-ones (2^64))
-; 1		Bytes(unsigned 8-bit)								(BYTES can't be NULL, but 00000000 or 11111111 is okay)
-; 2		Integers(signed 64-bit)								(NULL is represented with 64 1-ones (2^64))
-; 3		Positive Only Integers(unsigned 64-bit)				(NULL is represented with 64 1-ones (2^64))
-; 4		Char-sequences/String(UTF-8)						(NULL is represented with character code 0: #\Nul)
-; 5		IEEE 754 floating point 32-bit representation		(NULL is represented with 32 1-ones (2^32))
-; 6		IEEE 754 floating point 64-bit representation		(NULL is represented with 64 1-ones (2^64))
-; 7		Custom signed decimal 32-bit representation			(NULL is represented with 32 1-ones (2^32))
-; 8		Custom signed decimal 64-bit representation			(NULL is represented with 64 1-ones (2^64))
-; 9		Password hashed with bcrypt							(PASSWORDS cannot be NULL)
-; 10	Password hashed with scrypt							(PASSWORDS cannot be NULL)
-; 11	Password hashed with argon2i						(PASSWORDS cannot be NULL)
-; 12	Date												(NULL is represented by 0000-00-00 - effectively all bytes are zero)
-; 13	Datetime											(NULL is represented by 0000-00-00T00:00:00.00  - effectively all bytes are zero)
-; 14	Timestamp											(NULL is represented by 40 1-ones (2^40))
-; 15	Time												(NULL is represented by 00:00:00.00  - effectively all bytes are zero)
-; 16	Year												(NULL is 0000  - effectively all bytes are zero)
-
 ; Write table overview
 ; Section 1: 1 byte containing the number of fields, and then field names as a string of 8-bit chars
 ; Field names are additionally prefaced with an integer containing an integer containing the length of the name
@@ -107,19 +88,28 @@
 
 (defun write-data (stream data data-type)
 	(case data-type	
-		(0 (write-64bit-big-endian stream data))	; Index-integer (unsigned 64-bit big endian)
-		(1 (write-8bit-value stream data)) 			; Byte (8-bit)
-		(2 (write-64bit-value stream data)) 		; Signed Integer (64-bit)
-		(3 (write-signed-64bit-value stream data)) 	; Unsigned Integer (64-bit)
-		(4 (write-32bit-value stream (length data)) ; String (UTF-8)
-		   (write-utf-8-charseq stream data)) 		
-		(5 (write-32-bit-float stream data)) 		; IEEE 754 floating point 32-bit representation
-		(6 (write-64-bit-float stream data)) 		; IEEE 754 floating point 64-bit representation
-		(7 (write-32-bit-decimal stream data)) 		; Custom signed decimal 32-bit representation
-		(8 (write-64-bit-decimal stream data)) 		; Custom signed decimal 64-bit representation
-		(9 (write-bcrypt-password stream data)) 	; Password hashed with bcrypt (fastest)
-		(10 (write-scrypt-password stream data)) 	; Password hashed with scrypt
-		(11 (write-argon2-password stream data)) 	; Password hashed with argon2 (slowest)
+		(-1 (write-64-bit-big-endian data				; Index Integer (signed 64-bit big endian)
+		(0  (write-8bit-value stream data)) 			; Byte (8-bit)
+		(1  (write-signed-8bit-value data)) 			; Tinyinte (signed 8-bit)
+		(2  (write-64bit-value stream data)) 			; Small integer (signed 16-bit)
+		(3  (write-signed-64bit-value stream data)) 	; Medium integer (signed 24-bit)
+		(4  (write-signed-64bit-value stream data)) 	; Integer (signed 32-bit)
+		(5  (write-signed-64bit-value stream data)) 	; Positive Only Integers(unsigned 32-bit)
+		(6  (write-signed-64bit-value stream data)) 	; Big Integers(signed 64-bit)
+		(7  (write-32bit-value stream (length data)) 	; String (UTF-8)
+		    (write-utf-8-charseq stream data)) 		
+		(8  (write-32-bit-float stream data)) 			; IEEE 754 floating point 32-bit representation
+		(9  (write-64-bit-float stream data)) 			; IEEE 754 floating point 64-bit representation
+		(10 (write-32-bit-decimal stream data)) 		; Custom signed decimal 32-bit representation
+		(11 (write-64-bit-decimal stream data)) 		; Custom signed decimal 64-bit representation
+		(12 (write-bcrypt-password stream data)) 		; Password hashed with bcrypt (fastest)
+		(13 (write-scrypt-password stream data)) 		; Password hashed with scrypt
+		(14 (write-argon2-password stream data)) 		; Password hashed with argon2 (slowest)
+		(15 (write-date stream data)) 					; Date
+		(16 (write-datetime stream data) 				; Datetime
+		(17 (write-timestamp stream data)) 				; Timestamp (unsigned 40-bit integer)
+		(18 (write-time stream data)) 					; Time
+		(19 (write-year stream data)) 					; Year
 	)
 	(file-position stream))
 
@@ -133,7 +123,7 @@
 						(aref indexes i)
 						"_" table-name ".idx")
 						:direction :io
-						:if-exists :overwrite
+						:if-exists :append
 						:element-type '(unsigned-byte 8))))
 
 		(with-open-file (wstream  									; Open write-stream for data-file
@@ -148,8 +138,6 @@
 							:if-exists :append
 							:element-type '(unsigned-byte 8))
 					
-		(loop for stream across idx-streams do						; Skip the first 64-bit of every index-streams
-			(file-position stream 8))
 		(loop for row across insert-values do						; Loop through every value-set
 			(loop for stream across idx-streams do					; TEMPORARY write the line-start-position in all index-files 
 				(write-32bit-value stream (file-position wstream)))
