@@ -33,6 +33,6 @@
 (load "sql-databases.lsp")
 (load "sql-tables.lsp")
 (load "sql-insert.lsp")
-(load "sql-clause.lsp")
-(load "sql-select.lsp")
+;(load "sql-clause.lsp")
+;(load "sql-select.lsp")
 (load "sql-parser.lsp")

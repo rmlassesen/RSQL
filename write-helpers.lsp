@@ -208,8 +208,11 @@
 	(write-byte (ldb (byte 8 32)  value) stream))
 	
 	
-(defun write-time (stream time-string))
+(defun write-time (stream time-string)
+	(declare (ignore stream))
+	(declare (ignore time-string))
+)
 
 (defun write-year (stream year-string)
 	(let ((year (read-from-string year-string)))
-		(wite-16-bit-value stream year)))
+		(write-16bit-value stream year)))
