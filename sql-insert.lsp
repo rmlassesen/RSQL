@@ -1,82 +1,91 @@
 (in-package :rsql)
 ; SQL Insert Handling
 
-(defun make-inster-form (stream)
-	"Extract insert data from stream"
-	(let* ((*readtable* *SQL-readtable*)
-		  (table-name (read stream))
-		  (table-fields (fields (gethash table-name 
-							(tables (gethash *in-db* *schemas)))))
-		  (fields  (make-array (hash-table-count table-fields) :element-type t))
-		  (fvalues (make-array (hash-table-count table-fields) :element-type t))
-		  (dtypes  (make-array (hash-table-count table-fields) :element-type t))
-		  (valuelist (read stream)))
-		(cond 
-			((eql valuelist 'VALUES)
-				(maphash (lambda (k v)
-					(setf (aref fields (rownum v)) k)				; Assign FIELD NAME to array matching the fields ROW NUMBER
-					(setf (aref dtypes (rownum v)) (datatype v)))	; Assign the FIELD DATATYPE in the same way
-					(table-fields))
-					(setf valuelist (read stream))
-					(when (not (listp valuelist))
-						(error "INSERT statement is malformed at: ~a" valuelist))
-					(loop for val in valuelist 
-						  for i from 0 do
-							(unless (checktype val (aref dtypes i))
-								(error "~a does not match its designated datatype: ~a" val
-									(gethash (aref dtypes i) *datatypes-enum*)))
-							(setf (aref fvalues i) val)))
-					
-			((listp valuelist))
-			(t (error "INSERT statement is malformed near: ~a" valuelist)))
-	
+
 (defun make-insert-form (stream)
 	"Extract insert data from stream"
-	(let ((*readtable* *SQL-readtable*) (table-name) (vallen) (rows)
-		(vals (make-array 0 :element-type t :fill-pointer 0 :adjustable t)))
-		(setf table-name (read stream))
-		(setf rows (read stream))
-		(if (eql rows 'VALUES)
-			(vector-push-extend (read stream) vals)
-			(read stream))
-		(loop for val = (read stream nil nil)
-			while val do
-				(if (listp val)
-					(vector-push-extend (list-to-array val) vals)
-					(return)))
-		(setf vallen (length (aref vals 0)))
-		(if (listp rows)
-			(progn
-				(loop for v across vals do
-					(when (not (= (length rows) (length v)))
-						(error "The number of ROWS and VALUES do not match")))
-				(setf rows (list-to-array (mapcar #'from-keyword rows))))
-			(progn 
-				(loop for v across vals do
-					(when (not (= vallen (length v)))
-						(error "The number VALUES are of different length"))
-						(setf vallen (length v)))
-				(setf rows #((from-keyword rows)))))
-				
-		(list 	(from-keyword table-name) rows vals)))
+	(let*  ((*readtable* *SQL-readtable*)
+			(table-name (read stream nil nil))
+			(table-fields (fields (gethash table-name 
+				(tables (gethash *in-db* *schemas)))))
+			(valuelist (read stream nil nil))
+			(fieldnums)
+			(sets	 (make-array 0 :fill-pointer 0 :element-type t :adjustable t))			
+			(fields	 (make-array (hash-table-count table-fields) :element-type t))
+			(fvalues (make-array (hash-table-count table-fields) :element-type t :initial-element 'null)))
+			
+		(maphash (lambda (k v)
+			(setf (aref fields (rownum v)) v))									; Assign FIELD NAME to array matching the fields ROW NUMBER
+			(table-fields))
+			
+		(cond 
+			((not (table-fields))	(error "INSERT statement is malformed - missing correct table name"))
+			((not valuelist)		(error "INSERT statement is malformed - missing VALUES"))
+			((eql valuelist 'VALUES)
+				(loop for valuelist = (read stream nil nil)						; Retrieve (multiple) valuelist(s)
+					while (listp valuelist) do
+						(unless (= (length valuelist) (length fields))			; Check for the correct number of values in VALUES
+							(error "Number of values do not correspond number of fields: ~a" (length valuelist)))
+						(loop for val in valuelist								; Loop through VALUELIST
+							  for i from 0 do
+								(if (eql val 'null)
+								  (progn
+									(if (eql (nul (aref fields i)) :FALSE) 		; Check if NULL value is allowed to be NULL
+										(error "~a cannot be NULL" (name (aref fields i)))
+										(setf (aref fvalues i) 
+											(gethash (datatype (aref fields i)) *null-values*)))
+									(when (eql (aref fvalues i) 'error)
+										(error "Datatype cannot be NULL: ~a" 
+											(gethash (datatype (aref fields i)) *datatypes-enum*))))
+									(if (checktype val (datatype (aref fields i)))
+										(setf (aref fvalues i) val)
+										(error "~a does not match its designated datatype: ~a" val))))
+						(vector-push-extend (copy-seq fvalues) sets)))			; Push the values into the SETS array
+		((listp valuelist)
+			(setf fieldnums (make-array (length valuelist) :element-type 'integer))
+			(loop for fld in valuelist 											; Loop across provided fields and update 'null to 'reserved to corresponding values in FVALUES
+				  for i from 0 do
+					(setf (aref fvalues (rownum (gethash fld (table-fields))))
+						'reserved)
+					(setf (aref fieldnums i) (rownum (gethash fld (table-fields)))))
+			(loop for i from 0 below (length fvalues)
+				(when (eql (aref fvalues i) 'null)								; Loop across fvalues and set value to corresponding NULL values for the datatype
+					(when (and  (eql (nul 			 (aref fields i)) :FALSE)
+								(eql (auto_increment (aref fields i)) :FALSE))
+						(error "~a cannot be NULL" (name (aref fields i)))) 
+					(setf (aref fvalues i)
+						(gethash (datatype (aref fields i)) *null-values*))))
+			(loop for valuelist = (read stream nil nil)							; Retrieve (multiple) valuelist(s
+				while (listp valuelist) do
+				(unless (= (length valuelist) (length fieldnums))				; Check for the correct number of values in VALUES
+					(error "Number of values do not correspond number of fields: ~a" (length valuelist)))	
+				(loop for val in valuelist										; Loop through VALUELIST
+				  for i from 0 do
+					(if (eql val 'null)
+					  (progn
+						(if (eql (nul (aref fields (aref fieldnum i))) :FALSE) 	; Check if NULL value is allowed to be NULL
+							(error "~a cannot be NULL" (name (aref fields (aref fieldnum i))))
+							(setf (aref fvalues (aref fieldnum i)) 
+								(gethash (datatype (aref fields (aref fieldnum i))) *null-values*)))
+						(when (eql (aref fvalues (aref fieldnum i)) 'error)
+							(error "Datatype cannot be NULL: ~a" 
+								(gethash (datatype (aref fields (aref fieldnum i))) *datatypes-enum*))))
+						(if (checktype val (datatype (aref fields (aref fieldnum i))))
+							(setf (aref fvalues (aref fieldnum i)) val)
+							(error "~a does not match its designated datatype: ~a" val))))
+						(vector-push-extend (copy-seq fvalues) sets)))			; Push the values into the SETS array							
+		(t (error "INSERT statement is malformed near: ~a" valuelist)))
+		(when (< (length sets) 1)
+			(error "No values provided"))
+		(cons fields sets)))
+	
+
+
 
 (defun insert-into (stream)
 	"Insert data into database"
-	(let*  ((insert-form (make-insert-form stream))					; Redirect STREAM to INSERT parser
-			(vals (make-array (length (aref (third insert-form) 0))))
-			(table-form (read-table-form (first insert-form))))		; Retrieve table-form from table-name in INSERT-FORM
-		(when (> (length (aref (third insert-form) 0))				; Check if the number of VALUES are more than the number of ROWS in the TABLE
-				 (length (second table-form)))
-					(error "Too many VALUES in INSERT statement"))
-		(when (= 1 (length (second insert-form)))					; If VALUES are added directly without row specification
-			(when (not (= (length (aref (third insert-form) 0))		; Make sure that the number of VALUES match the ROWS of the TABLE
-						  (length (second table-form))))
-							(error "Number of VALUES does not match number of ROWS in TABLE ~a" (first insert-form))))
-		; TODO Make sure that VALUES are in the correct order
-		; TODO check if non asigned VALUES can be NULL otherwise ERROR
-		(loop for i below (length (second table-form)) do
-			(setf (aref (second table-form) i) (cdr (aref (second table-form) i))))
-		(write-rows (first table-form) (second table-form) (third insert-form) (third table-form))))
+	(let*  ((insert-form (make-insert-form stream)))					; Redirect STREAM to INSERT parser
+		insert-form))
 
 (defun test-i ()
 	(insert-into (make-string-input-stream 

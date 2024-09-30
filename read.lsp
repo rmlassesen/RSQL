@@ -81,6 +81,7 @@
 				(setf field-name 											; Read the FIELD name
 					(read-from-string
 						(read-8bit-charseq stream (read-byte stream))))
+				(setf (name current-field) field-name)						; Set FIELD name
 				(setf (datatype current-field) (read-byte stream))			; Retrieve the datatype enumeration
 				(setf field-info (read-field-info stream))					; Retrieve the addition field-info
 				(setf (primary    	  current-field) (aref field-info 0))	; Extract field-info
