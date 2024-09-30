@@ -88,9 +88,9 @@
 
 (defun write-data (stream data data-type)
 	(case data-type	
-		(-1 (write-64-bit-big-endian data				; Index Integer (signed 64-bit big endian)
+		(-1 (write-64bit-big-endian stream data))		; Index Integer (signed 64-bit big endian)
 		(0  (write-8bit-value stream data)) 			; Byte (8-bit)
-		(1  (write-signed-8bit-value data)) 			; Tinyinte (signed 8-bit)
+		(1  (write-signed-8bit-value stream data))		; Tinyinte (signed 8-bit)
 		(2  (write-64bit-value stream data)) 			; Small integer (signed 16-bit)
 		(3  (write-signed-64bit-value stream data)) 	; Medium integer (signed 24-bit)
 		(4  (write-signed-64bit-value stream data)) 	; Integer (signed 32-bit)
@@ -106,7 +106,7 @@
 		(13 (write-scrypt-password stream data)) 		; Password hashed with scrypt
 		(14 (write-argon2-password stream data)) 		; Password hashed with argon2 (slowest)
 		(15 (write-date stream data)) 					; Date
-		(16 (write-datetime stream data) 				; Datetime
+		(16 (write-datetime stream data)) 				; Datetime
 		(17 (write-timestamp stream data)) 				; Timestamp (unsigned 40-bit integer)
 		(18 (write-time stream data)) 					; Time
 		(19 (write-year stream data)) 					; Year
