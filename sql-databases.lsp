@@ -4,7 +4,10 @@
 (defvar *schemas* (make-hash-table))
 
 (defclass field ()
-	((rownum			:type integer		; Number holds the ROW index number. E.g. ID in ID, USR, EMAIL is 0 (USR is 1 and EMAIL is 3).
+	((name				:type symbol		; NAME contains the FIELD-NAME as a 'symbol
+						:accessor name
+						:initarg :name)
+	 (rownum			:type integer		; Number holds the ROW index number. E.g. ID in ID, USR, EMAIL is 0 (USR is 1 and EMAIL is 2).
 						:accessor rownum
 						:initarg :rownum)
 	 (datatype 			:type integer		; TYPE specifies the datatype based on the RSQL  data-type enumerations
@@ -12,7 +15,7 @@
 	 (primary 			:type keyword 		; PRIMARY specifies with keywords :TRUE or :FALSE, whether the field is a PRIMARY KEY/Index
 						:initform :FALSE
 						:accessor primary)
-	 (unique 			:type keyword 		; PRIMARY specifies with keywords :TRUE or :FALSE, whether the field is a UNIQUE INDEX
+	 (unique 			:type keyword 		; UNIQUE specifies with keywords :TRUE or :FALSE, whether the field is a UNIQUE INDEX
 						:initform :FALSE
 						:accessor unique)
 	 (auto_increment 	:type keyword		; AUTO_INCREMENT specifies with keywords :TRUE or :FALSE if the data should auto-increment (integers only)

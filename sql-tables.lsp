@@ -43,7 +43,7 @@
 					(when (gethash current-field (fields tbl)) 	; ERROR if FIELD NAME is already assigned to the table
 						(error "Duplicate of field name ~a" current-field))
 					(setf (gethash current-field (fields tbl))	; Make a new field instance in the table's FIELD hash-table and set ROWNUM to FIELD-NUM
-						(make-instance 'field :rownum field-num))
+						(make-instance 'field :name current-field :rownum field-num))
 					(incf field-num))))							; Increment FIELD-NUM
 	tbl))				
 
