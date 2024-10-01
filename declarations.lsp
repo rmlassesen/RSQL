@@ -14,7 +14,7 @@
 
 (declaim (ftype (function (t)) write-table-form))
 (declaim (ftype (function (stream t integer)) write-data))
-(declaim (ftype (function (symbol array array array)) write-rows))
+(declaim (ftype (function (symbol array)) write-rows))
 
 ; Strings
 (declaim (ftype (function () array) unknown-char))

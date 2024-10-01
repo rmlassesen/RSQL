@@ -91,10 +91,10 @@
 		(-1 (write-64bit-big-endian stream data))		; Index Integer (signed 64-bit big endian)
 		(0  (write-8bit-value stream data)) 			; Byte (8-bit)
 		(1  (write-signed-8bit-value stream data))		; Tinyinte (signed 8-bit)
-		(2  (write-64bit-value stream data)) 			; Small integer (signed 16-bit)
-		(3  (write-signed-64bit-value stream data)) 	; Medium integer (signed 24-bit)
-		(4  (write-signed-64bit-value stream data)) 	; Integer (signed 32-bit)
-		(5  (write-signed-64bit-value stream data)) 	; Positive Only Integers(unsigned 32-bit)
+		(2  (write-16bit-value stream data)) 			; Small integer (signed 16-bit)
+		(3  (write-signed-24bit-value stream data)) 	; Medium integer (signed 24-bit)
+		(4  (write-signed-32bit-value stream data)) 	; Integer (signed 32-bit)
+		(5  (write-32bit-value stream data)) 			; Positive Only Integers(unsigned 32-bit)
 		(6  (write-signed-64bit-value stream data)) 	; Big Integers(signed 64-bit)
 		(7  (write-32bit-value stream (length data)) 	; String (UTF-8)
 		    (write-utf-8-charseq stream data)) 		
@@ -113,39 +113,57 @@
 	)
 	(file-position stream))
 
-(defun write-rows (table-name data-types insert-values indexes)
-	"Write a rows to the database file of table TABLE-NAME"
-	(let (( idx-streams (make-array (length indexes))))
-		(loop for i from 0 below (length indexes) do				; Open a stream for each PRIMARY KEY of the table
-			(setf (aref idx-streams i) 
-				(open (concatenate 'string 	
-						*data-dir* 
-						(aref indexes i)
-						"_" table-name ".idx")
-						:direction :io
-						:if-exists :append
-						:element-type '(unsigned-byte 8))))
-
-		(with-open-file (wstream  									; Open write-stream for data-file
-							(concatenate 'string
-								*data-dir*
-								(princ-to-string
-									(data-file-number 
-										(read-64bit-value (aref idx-streams 0))))
-								"_" table-name ".dat")
-							:direction :output
-							:if-does-not-exist :create
-							:if-exists :append
-							:element-type '(unsigned-byte 8))
-					
-		(loop for row across insert-values do						; Loop through every value-set
-			(loop for stream across idx-streams do					; TEMPORARY write the line-start-position in all index-files 
-				(write-32bit-value stream (file-position wstream)))
-			(loop for i from 0 below (length row) do				; Loop through each entry in value-set
-				(write-data wstream 								; Write corresponding data
+(defun write-rows (table-name rows)
+	(let* ((tbl (gethash table-name
+					(tables 
+						(gethash *in-db* 
+							*schemas*))))
+		  (keypair)(datastream) (keystream)
+		  (latest (make-array (length (fieldarr tbl)) :element-type t :initial-element :CLEAR)))	  
+		(maphash (lambda (k v)							; Build a KEYPAIR string
+			(declare (ignore v))
+			(setf keypair (concatenate  'string
+										(string k)
+										"_")))
+			(primary tbl))
+		(setf keystream (open (concatenate  'string
+											*data-dir*
+											(string *in-db*) "/"
+											keypair
+											(string table-name) 
+											".idx")
+								:direction :output
+								:element-type '(unsigned-byte 8)
+								:if-exists :append))
+		(setf datastream (open (concatenate 'string
+											*data-dir*
+											(string *in-db*) "/"  
+											(string-downcase (string table-name))
+											"_" (write-to-string (files tbl))
+											".dat")
+								:direction :output
+								:element-type '(unsigned-byte 8)
+								:if-exists :overwrite
+								:if-does-not-exist :create))
+		(unless (= (lastpos tbl) 0)
+			(file-position datastream (lastpos tbl))
+			(read-row datastream tbl latest))
+		(loop for row across rows do
+			(write-8bit-value keystream (files tbl))
+			(write-32bit-value keystream (file-position datastream))
+			(loop for i below (length row) do
+				(when (eql (aref row i) :auto)
+					(setf (aref row i) (+ 1 (aref latest i))))
+				(setf (aref latest i) (aref row i))
+				(write-data datastream
 							(aref row i)
-							(aref data-types i))))
-		(loop for stream across idx-streams do						; Write the file-length at the begininng of all index-files (Needs modification to include all file's sizes in combination)
-				(write-32bit-value stream (file-position wstream))
-				(when stream (close stream))))))					; Close the streams
+							(datatype (aref (fieldarr tbl) i)))
+				(when (eql (primary (aref (fieldarr tbl) i)) :TRUE)
+					(write-data keystream
+								(aref row i)
+								(datatype (aref (fieldarr tbl) i))))))
+			
+		(close datastream)
+		(close keystream)))
+		
 
