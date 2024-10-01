@@ -149,6 +149,7 @@
 			(file-position datastream (lastpos tbl))
 			(read-row datastream tbl latest))
 		(loop for row across rows do
+			(setf (lastpos tbl) (file-position datastream))
 			(loop for i below (length row) do
 				(when (eql (aref row i) :auto)
 					(setf (aref row i) (+ 1 (aref latest i))))
@@ -161,7 +162,7 @@
 								(aref row i)
 								(datatype (aref (fieldarr tbl) i)))))
 			(write-8bit-value keystream (files tbl))
-			(write-32bit-value keystream (file-position datastream)))
+			(write-32bit-value keystream (lastpos tbl)))
 			
 		(close datastream)
 		(close keystream)))
