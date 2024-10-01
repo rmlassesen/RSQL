@@ -9,16 +9,13 @@
 			(table-name (read stream nil nil))
 			(table-fields (fields (gethash table-name 
 				(tables (gethash *in-db* *schemas*)))))
+			(fields	 (fieldarr (gethash table-name 
+				(tables (gethash *in-db* *schemas*)))))
 			(valuelist (read stream nil nil))
 			(fieldnums)
 			(sets	 (make-array 0 :fill-pointer 0 :element-type t :adjustable t))			
-			(fields	 (make-array (hash-table-count table-fields) :element-type t))
-			(fvalues (make-array (hash-table-count table-fields) :element-type t :initial-element 'null)))
-		(declare (ignore dummy))	
-		(maphash (lambda (k v)
-			(declare (ignore k))
-			(setf (aref fields (rownum v)) v))									; Assign FIELD NAME to array matching the fields ROW NUMBER
-			table-fields)
+			(fvalues (make-array (length fields) :element-type t :initial-element 'null)))
+		(declare (ignore dummy))
 			
 		(cond 
 			((not table-fields)	(error "INSERT statement is malformed - missing correct table name"))
