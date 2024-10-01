@@ -7,41 +7,59 @@
 	(when (>= (file-position stream) (file-length stream))
 		(return-from read-data nil))
 	(case data-type	
-		(0 (read-64bit-big-endian stream))		; Index-integer (unsigned 64-bit big endian)
-		(1 (read-8bit-value stream)) 			; Byte (8-bit)
-		(2 (read-64bit-value stream)) 			; Signed Integer (64-bit)
-		(3 (read-signed-64bit-value stream)) 	; Unsigned Integer (64-bit)
-		(4 (read-utf-8-charseq stream 			; String (UTF-8)
-				(read-32bit-value stream))); 
-		(5 (read-32-bit-float stream)) 			; IEEE 754 floating point 32-bit representation
-		(6 (read-64-bit-float stream)) 			; IEEE 754 floating point 64-bit representation
-		(7 (read-32-bit-decimal stream)) 		; Custom signed decimal 32-bit representation
-		(8 (read-64-bit-decimal stream)) 		; Custom signed decimal 64-bit representation
-		(9 (read-bcrypt-password stream data)) 	; Password hashed with bcrypt (fastest)
-		(10 (read-scrypt-password stream data)) ; Password hashed with scrypt
-		(11 (read-argon2-password stream data)) ; Password hashed with argon2 (slowest)
+		(-1 (read-64bit-big-endian stream))			; Index Integer (signed 64-bit big endian)
+		(0  (read-8bit-value stream)) 				; Byte (8-bit)
+		(1  (read-signed-8bit-value stream))		; Tinyinte (signed 8-bit)
+		(2  (read-16bit-value stream)) 				; Small integer (signed 16-bit)
+		(3  (read-signed-24bit-value stream)) 		; Medium integer (signed 24-bit)
+		(4  (read-signed-32bit-value stream)) 		; Integer (signed 32-bit)
+		(5  (read-32bit-value stream)) 	; Positive Only Integers(unsigned 32-bit)
+		(6  (read-signed-64bit-value stream)) 		; Big Integers(signed 64-bit)
+		(7  (read-utf-8-charseq stream 				; String (UTF-8)
+				(read-32bit-value stream)))
+		(8  (read-32-bit-float stream)) 			; IEEE 754 floating point 32-bit representation
+		(9  (read-64-bit-float stream)) 			; IEEE 754 floating point 64-bit representation
+		(10 (read-32-bit-decimal stream)) 			; Custom signed decimal 32-bit representation
+		(11 (read-64-bit-decimal stream)) 			; Custom signed decimal 64-bit representation
+		(12 (read-bcrypt-password stream data)) 	; Password hashed with bcrypt (fastest)
+		(13 (read-scrypt-password stream data)) 	; Password hashed with scrypt
+		(14 (read-argon2-password stream data)) 	; Password hashed with argon2 (slowest)
+		(15 (read-date stream)) 					; Date
+		(16 (read-datetime stream)) 				; Datetime
+		(17 (read-timestamp stream)) 				; Timestamp (unsigned 40-bit integer)
+		(18 (read-time stream)) 					; Time
+		(19 (read-year stream)) 					; Year
 	))
+	
 	
 (defun skip-data (stream data-type)
 	(when (>= (file-position stream) (file-length stream))
 		(return-from skip-data nil))
 		
 	(case data-type	
-		(0 (file-position stream (+ 8 (file-position stream))))		; Index-integer (unsigned 64-bit big endian)
-		(1 (file-position stream (+ 1 (file-position stream)))) 	; Byte (8-bit)
-		(2 (file-position stream (+ 8 (file-position stream)))) 	; Signed Integer (64-bit)
-		(3 (file-position stream (+ 8 (file-position stream)))) 	; Unsigned Integer (64-bit)
-		(4 (file-position stream (+ (read-32bit-value stream)  		; String (UTF-8)
-									(file-position stream))))
-		(5 (file-position stream (+ 4 (file-position stream)))) 	; IEEE 754 floating point 32-bit representation
-		(6 (file-position stream (+ 8 (file-position stream)))) 	; IEEE 754 floating point 64-bit representation
-		(7 (file-position stream (+ 4 (file-position stream)))) 	; Custom signed decimal 32-bit representation
-		(8 (file-position stream (+ 8 (file-position stream)))) 	; Custom signed decimal 64-bit representation
-		(9 (file-position stream (+ 40 (file-position stream)))) 	; Password hashed with bcrypt (fastest)
-		(10 (file-position stream (+ 40 (file-position stream))))	; Password hashed with scrypt
-		(11 (file-position stream (+ 80 (file-position stream))))	; Password hashed with argon2 (slowest)
+		(-1 (file-position stream (+ 8	(file-position stream))))	; Index Integer (signed 64-bit big endian)
+		(0  (file-position stream (+ 1	(file-position stream)))) 	; Byte (8-bit)
+		(1  (file-position stream (+ 1	(file-position stream))))	; Tinyinte (signed 8-bit)
+		(2  (file-position stream (+ 2	(file-position stream)))) 	; Small integer (signed 16-bit)
+		(3  (file-position stream (+ 3	(file-position stream)))) 	; Medium integer (signed 24-bit)
+		(4  (file-position stream (+ 4	(file-position stream)))) 	; Integer (signed 32-bit)
+		(5  (file-position stream (+ 4	(file-position stream)))) 	; Positive Only Integers(unsigned 32-bit)
+		(6  (file-position stream (+ 8	(file-position stream)))) 	; Big Integers(signed 64-bit)
+		(7  (file-position stream (+	(read-32bit-value stream)  	; String (UTF-8)
+										(file-position stream))))
+		(8  (file-position stream (+ 4	(file-position stream)))) 	; IEEE 754 floating point 32-bit representation
+		(9  (file-position stream (+ 8	(file-position stream)))) 	; IEEE 754 floating point 64-bit representation
+		(10 (file-position stream (+ 4	(file-position stream)))) 	; Custom signed decimal 32-bit representation
+		(11 (file-position stream (+ 8	(file-position stream)))) 	; Custom signed decimal 64-bit representation
+		(12 (file-position stream (+ 40 (file-position stream)))) 	; Password hashed with bcrypt (fastest)
+		(13 (file-position stream (+ 40 (file-position stream)))) 	; Password hashed with scrypt
+		(14 (file-position stream (+ 80 (file-position stream)))) 	; Password hashed with argon2 (slowest)
+		(15 (read-date stream)) 					; Date
+		(16 (file-position stream (+ 6 (file-position stream))))	; Datetime
+		(17 (file-position stream (+ 5 (file-position stream)))) 	; Timestamp (unsigned 40-bit integer)
+		(18 (read-time stream)) 					; Time
+		(19 (file-position stream (+ 2 (file-position stream))))	; Year
 	))
-
 
 (defun skip-multiple-data (stream datatypes)
 	"Using SKIP-DATA skip a composition of multiple data-types"
@@ -119,7 +137,7 @@
 	"Returns a CONS of file number and ROW COUNT
 	KEYS already carry the neccesary _ for filename"
 	(when (< (length keytypes) 1)
-		(return-from read-data-size (cons 0 0))) 
+		(return-from read-data-size (list 0 0 0)))
 	(with-open-file 
 		(stream (concatenate 'string 
 							 *data-dir*
@@ -128,9 +146,27 @@
 							 (string table-name) ".idx")
 						:direction :input
 						:element-type '(unsigned-byte 8))
-		(cons 	(read-8bit-value stream)
+		(list 	(read-8bit-value stream)
 				(loop	for i from 0
 						for d = (skip-multiple-data stream keytypes)
-						while d do 
+						while d do
 							(file-position stream (+ 5 (file-position stream)))
-						finally (return i)))))
+						finally (return i))
+						(if (> (file-length stream) 8)					; If the file-length is larger than 8, expect a 32-bit integer as a file-position designations
+							(progn
+								(file-position stream ( - (file-position stream) 4))
+								(read-32bit-value stream))
+							0))))
+
+; Read row reads a row from STREAM using datatypes in TABLE-FORM and inserts them into rset
+; If entries in RSET are not :CLEAR those values will not be re-read							
+(defun read-row (stream table-form rset)
+	"Read a single row from file-stream"
+	(loop for i from 0 below (length rset) do
+		(if (eql (aref rset i) :CLEAR)
+			(setf (aref rset i)
+				(read-data stream (datatype
+					(aref (fieldarr table-form) i))))
+			(skip-data stream (datatype
+						(aref (fieldarr table-form) i))))))
+					 

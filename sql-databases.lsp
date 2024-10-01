@@ -40,6 +40,8 @@
 				:accessor files)
 	 (rowcount	:type integer	 :initform 0	; Number of ROWS the table contains
 				:accessor rowcount)
+	 (lastpos	:type integer	 :initform 0	; File-position the last ROW begins at
+				:accessor lastpos)
 	 (fieldarr	:type t							; An array containing references to the fields, indexed by ROWNUM
 				:accessor fieldarr)))
 
@@ -92,8 +94,9 @@
 							table-name
 							keypair
 							keytypes))
-		(setf (files table-form) 	(car data-size))
-		(setf (rowcount table-form) (cdr data-size))
+		(setf (files    table-form) (first  data-size))
+		(setf (rowcount table-form) (second data-size))
+		(setf (lastpos  table-form) (third  data-size))
 		
 		(setf (fieldarr table-form) (make-array (hash-table-count (fields table-form)) :element-type t))
 		(maphash (lambda (k v)

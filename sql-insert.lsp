@@ -78,12 +78,13 @@
 		(t (error "INSERT statement is malformed near: ~a" valuelist)))
 		(when (< (length sets) 1)
 			(error "No values provided"))
-		(cons fields sets)))
+		(cons table-name sets)))
 
 (defun insert-into (stream)
 	"Insert data into database"
 	(let*  ((insert-form (make-insert-form stream)))					; Redirect STREAM to INSERT parser
-		insert-form))
+		(write-rows  (car insert-form)
+					 (cdr insert-form))))
 
 (defun test-i ()
 	(insert-into (make-string-input-stream 

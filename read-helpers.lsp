@@ -73,12 +73,40 @@
 		str))
 	
 ; Read signed bytes from the stream, to get also negative values etc.
-(defun read-signed-byte-8 (stream)
+(defun read-signed-8bit-value (stream)
 	"Read a signed 8-bit integer from an unsigned-byte 8 stream"
 	(let ((unsigned-value (read-byte stream)))
-		(if (> unsigned-value 127)
-			(- unsigned-value 256)
+		(if (>= (logand unsigned-value #x80) 0)  ; Check if the sign bit is set
+			(- unsigned-value (ash 1 8))
 			unsigned-value)))
+
+(defun read-signed-16bit-value (stream)
+	"Read a signed 16-bit integer from an unsigned-byte 8 stream"
+	(let ((unsigned-value (+ (ash (read-byte stream) 0)
+                           (ash (read-byte stream) 8))))
+		(if (>= (logand unsigned-value #x8000) 0)  ; Check if the sign bit is set
+			(- unsigned-value (ash 1 16))
+			unsigned-value)))
+
+(defun read-signed-24bit-value (stream)
+	"Read a signed 24-bit integer from an unsigned-byte 8 stream"
+	(let ((unsigned-value (+ (ash (read-byte stream) 0)
+                           (ash (read-byte stream) 8)
+                           (ash (read-byte stream) 16))))
+		(if (>= (logand unsigned-value #x800000) 0)  ; Check if the sign bit is set
+			(- unsigned-value (ash 1 24))
+			unsigned-value)))
+
+(defun read-signed-32bit-value (stream)
+	"Read a signed 32-bit integer from an unsigned-byte 8 stream"
+	(let ((unsigned-value (+ (ash (read-byte stream) 0)
+                           (ash (read-byte stream) 8)
+                           (ash (read-byte stream) 16)
+                           (ash (read-byte stream) 24))))
+		(if (>= (logand unsigned-value #x80000000) 0)  ; Check if the sign bit is set
+			(- unsigned-value (ash 1 32))
+			unsigned-value)))
+
 			
 (defun read-signed-64bit-value (stream)
 	"Read a signed 64-bit integer from an unsigned-byte 8 stream"
@@ -142,33 +170,42 @@
 ; Passwords - salted, please
 (defun read-argon2-password (stream password)
 	"Returns t, if password is correct"
+	(unless password (return-from read-argon2-password 'NULL))
 	(let (	(salt (make-array 16 :element-type '(unsigned-byte 8)))
 			(hashed-pw (make-array 64 :element-type '(unsigned-byte 8))))
 		(loop for i from 0 to 15 do
 			(setf (aref salt i) (read-byte stream)))
 		(loop for i from 0 to 63 do
 			(setf (aref hashed-pw i) (read-byte stream)))
-		(equalp hashed-pw (hash-argon2-password password salt))))
+		(if (equalp hashed-pw (hash-argon2-password password salt))
+			:GRANTED
+			:DENIED)))
 	
 (defun read-scrypt-password (stream password)
 	"Returns t, if password is correct"
+	(unless password (return-from read-scrypt-password 'NULL))
 	(let (	(salt (make-array 16 :element-type '(unsigned-byte 8)))
 		(hashed-pw (make-array 24 :element-type '(unsigned-byte 8))))
 	(loop for i from 0 to 15 do
 		(setf (aref salt i) (read-byte stream)))
 	(loop for i from 0 to 23 do
 		(setf (aref hashed-pw i) (read-byte stream)))
-	(equalp hashed-pw (hash-scrypt-password password salt))))
+	(if (equalp hashed-pw (hash-scrypt-password password salt))
+		:GRANTED
+		:DENIED)))
 	
 (defun read-bcrypt-password (stream password)
 	"Returns t, if password is correct"
+	(unless password (return-from read-bcrypt-password 'NULL))
 	(let (	(salt (make-array 16 :element-type '(unsigned-byte 8)))
 			(hashed-pw (make-array 24 :element-type '(unsigned-byte 8))))
 		(loop for i from 0 to 15 do
 			(setf (aref salt i) (read-byte stream)))
 		(loop for i from 0 to 23 do
 			(setf (aref hashed-pw i) (read-byte stream)))
-		(equalp hashed-pw (hash-bcrypt-password password salt))))
+		(if (equalp hashed-pw (hash-bcrypt-password password salt))
+			:GRANTED
+			:DENIED)))
 
 ; Datetime reading
 (defun read-date (stream)
@@ -188,4 +225,17 @@
 							(bit-to-int bit-array 29 34)		; Convert the next  6 bits into an integer	(mm)
 							(bit-to-int bit-array 35 40)		; Convert the next  6 bits into an integer	(ss)
 							(bit-to-int bit-array 41 47))))		; Convert the last  7 bits into an integer	(ms)
-						
+
+(defun read-time (stream)
+	(declare (ignore stream))
+)
+
+(defun read-timestamp (stream)
+	(+ (ash (read-byte stream) 0)
+	   (ash (read-byte stream) 8)
+	   (ash (read-byte stream) 16)
+	   (ash (read-byte stream) 24)
+	   (ash (read-byte stream) 32)))
+
+(defun read-year (stream)
+	(write-to-string (read-16bit-value stream)))
