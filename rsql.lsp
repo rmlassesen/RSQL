@@ -24,7 +24,7 @@
 
 (defvar *mystream* nil)
 (defun w() (setf *mystream* (open "test.ts" :direction :output :if-exists :supersede :element-type '(unsigned-byte 8))))
-(defun r() (setf *mystream* (open "test.ts" :direction :input :element-type '(unsigned-byte 8))))
+(defun r() (setf *mystream* (open "Lists/mock_db/mock_data_0.dat" :direction :input :element-type '(unsigned-byte 8))))
 (defun c() (close *mystream*))
 
 ; ONLY FOR TESTING - AND THIS
