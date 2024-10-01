@@ -63,7 +63,7 @@
 
 (defun skip-multiple-data (stream datatypes)
 	"Using SKIP-DATA skip a composition of multiple data-types"
-	(when (> (length datatypes) 0)
+	(when (< (length datatypes) 1)
 		(return-from skip-multiple-data nil))
 	(dolist (tp datatypes)
 		(unless (skip-data stream tp)
@@ -130,7 +130,7 @@
 ; 			- A 32-bit integer representing the file position 
 ;			 (allowing files up to 4MB).
 
-;READ-DATA-SIZE reads the file number and iterates through the file, skipping data based on the key-fields' data types
+; READ-DATA-SIZE reads the file number and iterates through the file, skipping data based on the key-fields' data types
 ; and advancing 5 bytes per entry (1 byte for the file number and 4 bytes for the file position).
 
 (defun read-data-size (schema-name table-name keys keytypes)
@@ -152,7 +152,7 @@
 						while d do
 							(file-position stream (+ 5 (file-position stream)))
 						finally (return i))
-						(if (> (file-length stream) 8)					; If the file-length is larger than 8, expect a 32-bit integer as a file-position designations
+						(if (> (file-length stream) 8)					; If the file-length is larger than 8, expect a 32-bit integer as a file-position designator
 							(progn
 								(file-position stream ( - (file-position stream) 4))
 								(read-32bit-value stream))
