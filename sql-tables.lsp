@@ -45,7 +45,12 @@
 					(setf (gethash current-field (fields tbl))	; Make a new field instance in the table's FIELD hash-table and set ROWNUM to FIELD-NUM
 						(make-instance 'field :name current-field :rownum field-num))
 					(incf field-num))))							; Increment FIELD-NUM
-	tbl))				
+		(setf (fieldarr tbl) (make-array (hash-table-count (fields tbl)) :element-type t))
+		(maphash (lambda (k v)
+			(declare (ignore k))
+			(setf (aref (fieldarr tbl) (rownum v)) v))			; Assign FIELD reference to FIELDARR matching the fields' ROW NUMBER
+			(fields tbl))
+		tbl))				
 
 (defun create-table (stream)
 	"Create a table-form from STREAM, write it to files, and store it in the schema"

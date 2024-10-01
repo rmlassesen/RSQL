@@ -4,7 +4,7 @@
 
 ; JLI takes form as a simple array of hash-tables, representing each {},[] encapsulation with an array of hash-tables
 
-; Return-list encapsules a list of :keywords as KEYS, of which entries from the records to return
+; Return-list encapsulates a list of :keywords as KEYS, of which entries from the records to return
 ; No return-list returns all/* (temp function for DEV)
 
 (defun find-in-jli (jli key operator val &optional return-list)

@@ -39,7 +39,9 @@
 	 (files		:type integer 	 :initform 0	; Number of files the table is split into
 				:accessor files)
 	 (rowcount	:type integer	 :initform 0	; Number of ROWS the table contains
-				:accessor rowcount)))
+				:accessor rowcount)
+	 (fieldarr	:type t							; An array containing references to the fields, indexed by ROWNUM
+				:accessor fieldarr)))
 
 (defclass schema ()
 	((tables :type hash-table :accessor tables :initform (make-hash-table))))
@@ -92,6 +94,12 @@
 							keytypes))
 		(setf (files table-form) 	(car data-size))
 		(setf (rowcount table-form) (cdr data-size))
+		
+		(setf (fieldarr table-form) (make-array (hash-table-count (fields table-form)) :element-type t))
+		(maphash (lambda (k v)
+			(declare (ignore k))
+			(setf (aref (fieldarr table-form) (rownum v)) v))			; Assign FIELD reference to FIELDARR matching the fields' ROW NUMBER
+			(fields table-form))
 		table-form))
 		
 
