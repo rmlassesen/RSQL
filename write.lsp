@@ -141,11 +141,11 @@
 											(string-downcase (string table-name))
 											"_" (write-to-string (files tbl))
 											".dat")
-								:direction :output
+								:direction :io
 								:element-type '(unsigned-byte 8)
 								:if-exists :overwrite
 								:if-does-not-exist :create))
-		(unless (= (lastpos tbl) 0)
+		(unless (< (file-length datastream) 1)
 			(file-position datastream (lastpos tbl))
 			(read-row datastream tbl latest))
 		(loop for row across rows do
